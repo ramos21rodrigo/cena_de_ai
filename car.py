@@ -1,24 +1,31 @@
+import asyncio
+from typing import List
+from spade.agent import Agent
+from spade.behaviour import CyclicBehaviour
 
-class DummyAgent(Agent):
-    class MyBehav(CyclicBehaviour):
-        
-        counter: int = 0
+from config import SIMULATION_SPEED, DIRECTIONS, environment
+
+class CarAgent(Agent):
+
+    def __init__(self, jid, password, position: List[int], direction: DIRECTIONS):
+        super().__init__(jid, password)
+        self.set("position", position)
+        self.set("direction", direction)
+
+    class behave(CyclicBehaviour):
+        position: List[int]
+        direction: DIRECTIONS
 
         async def on_start(self):
-            print("Starting behaviour . . .")
+            self.position = self.get("position")
+            self.direction = self.get("direction")
 
         async def run(self):
-            print("Counter: {}".format(self.counter))
-            self.counter += 1
-            if self.counter > 3:
-                self.kill(exit_code=10)
-                return
-            await asyncio.sleep(1)
-
-        async def on_end(self):
-            print("Behaviour finished with exit code {}.".format(self.exit_code))
+            self.position[0] += self.direction.value[0]
+            self.position[1] += self.direction.value[1]
+            environment.update_city(position = self.position)
+            await asyncio.sleep(1 / SIMULATION_SPEED)
 
     async def setup(self):
-        print("Agent starting . . .")
-        self.my_behav = self.MyBehav()
+        self.my_behav = self.behave()
         self.add_behaviour(self.my_behav)
