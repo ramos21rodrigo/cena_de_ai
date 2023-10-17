@@ -1,19 +1,15 @@
-import asyncio
 from typing import List
-from spade.agent import Agent
-from spade.behaviour import CyclicBehaviour
-import os
+import curses
 
 CITY_HEIGHT = 24
 CITY_WIDTH = 24
 
-from enum import Enum, auto
+from enum import Enum
 
-class SPACE(Enum):
-    EMPTY = auto()
-    CAR = auto()
-    LIGHT = auto()
-
+class TYPE(Enum):
+    EMPTY = "-"
+    CAR = "*"
+    LIGHT = "+"
 
 #class Environment(Agent):
 #    class behave(CyclicBehaviour):
@@ -35,22 +31,35 @@ class SPACE(Enum):
 
 class Environment:
 
-    city = [[0 for i in range(CITY_WIDTH)] for j in range(CITY_HEIGHT)]
+    city = [[[] for i in range(CITY_WIDTH)] for j in range(CITY_HEIGHT)]
+    stdscr = curses.initscr()
     
     def get_position(self, position: List[int]):
-        block = self.city[position[0]][position[1]]
+        return self.city[position[0]][position[1]]
 
-    def update_city(self, position: List[int]):
-        self.city[position[0]][position[1]] = 1
-        self.print_city()
+    def get_from_position(self, position: List[int]):
+        return self.city[position[0]][position[1]]
 
-    def print_city(self):
-        os.system("clear")
+    def update_city(self, component):
+        position = component.get_position()
+        name = component.get_name()
 
         for i in range(CITY_WIDTH):
             for j in range(CITY_HEIGHT):
-                print(self.city[i][j], end=" ")
-            print()
+                if (self.city[i][j] == []): continue
+                if (self.city[i][j].get_name() == name): self.city[i][j] = []
+
+        self.city[position[0]][position[1]] = component
+        self.print_city()
+
+    def print_city(self):
+        self.stdscr.clear()
+        for i in range(CITY_WIDTH):
+            for j in range(CITY_HEIGHT):
+                self.stdscr.addstr("{char} ".format(char = self.city[i][j].get_type().value) if self.city[i][j] else "- ")
+            self.stdscr.addch("\n")
+        print("", end="\r")
+        self.stdscr.refresh()
 
 
 

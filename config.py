@@ -1,7 +1,7 @@
 from enum import Enum
-from environment import Environment
+from environment import Environment, TYPE
 
-SIMULATION_SPEED: int = 1
+SIMULATION_SPEED: int = 2
 
 class DIRECTIONS(Enum):
     NORTH = (1, 0)

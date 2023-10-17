@@ -1,27 +1,40 @@
 import asyncio
+from typing import List
+from environment import TYPE
 from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour
 
 from config import SIMULATION_SPEED, DIRECTIONS
 
-from enum import Enum, auto
+from enum import Enum
 
-class Colors(Enum):
+class COLORS(Enum):
     GREEN = "green"
     YELLOW = "yellow"
     RED = "red"
 
 class TrafficLightAgent(Agent):
     class behave(CyclicBehaviour):
+        position: List[int]
+        ligth: COLORS
+
+        def get_position(self):
+            return self.position
+
+        def get_type(self):
+            return TYPE.LIGHT
+
+        def get_light(self):
+            return self.ligth
         
 #        async def on_start(self):
 
         async def run(self):
-            print(Colors.GREEN.value)
+            self.light = COLORS.GREEN
             await asyncio.sleep(10 / SIMULATION_SPEED)
-            print(Colors.YELLOW.value)
+            self.light = COLORS.YELLOW
             await asyncio.sleep(1 / SIMULATION_SPEED)
-            print(Colors.RED.value)
+            self.light = COLORS.RED
             await asyncio.sleep(10 / SIMULATION_SPEED)
 
 #        async def on_end(self):

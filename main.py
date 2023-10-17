@@ -5,7 +5,7 @@ from spade.behaviour import CyclicBehaviour
 
 from spade import wait_until_finished
 
-from config import DIRECTIONS, SIMULATION_SPEED
+from config import DIRECTIONS
 
 # from traffic_light import TrafficLightAgent
 from car import CarAgent
