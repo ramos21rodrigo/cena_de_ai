@@ -1,62 +1,65 @@
 from typing import List
+import time
+import math
 import curses
 
-CITY_HEIGHT = 24
-CITY_WIDTH = 24
+from config import DIRECTIONS
+
+CITY_HEIGHT = 6
+CITY_WIDTH = 12
 
 from enum import Enum
 
 class TYPE(Enum):
-    EMPTY = "-"
-    CAR = "*"
+    ROAD = "."
+    WALL = "-"
     LIGHT = "+"
-
-#class Environment(Agent):
-#    class behave(CyclicBehaviour):
-#        
-#        city = [[0 for i in range(CITY_WIDTH)] for j in range(CITY_HEIGHT)]
-#
-#        # async def on_start(self):
-#
-#        async def run(self):
-#            await asyncio.sleep(1)
-#
-#        async def on_end(self):
-#            print("Behaviour finished with exit code {}.".format(self.exit_code))
-#
-#    async def setup(self):
-#        print("Agent starting . . .")
-#        self.my_behav = self.behave()
-#        self.add_behaviour(self.my_behav)
 
 class Environment:
 
-    city = [[[] for i in range(CITY_WIDTH)] for j in range(CITY_HEIGHT)]
+    city_schema = [
+            ['-','-','-','-','-','-','-','-','-','-','-','-'],
+            ['.','.','.','.','.','.','.','.','.','.','.','.'],
+            ['.','.','.','.','.','.','.','.','.','.','.','.'],
+            ['-','-','-','-','-','-','-','.','-','-','-','-'],
+            ['-','-','-','-','-','-','-','.','-','-','-','-'],
+            ['-','-','-','-','-','-','-','-','-','-','-','-']
+            ]
+    city = [["" for i in range(CITY_WIDTH)] for j in range(CITY_HEIGHT)]
     stdscr = curses.initscr()
-    
+
     def get_position(self, position: List[int]):
         return self.city[position[0]][position[1]]
 
-    def get_from_position(self, position: List[int]):
-        return self.city[position[0]][position[1]]
+    def get_possible_directions(self, position: List[int], direction: DIRECTIONS) -> List[DIRECTIONS]:
+        #to_left: int = direction.value + 90 if direction.value + 90 < 360 else 0
+        to_right: int = direction.value - 90 if direction.value - 90 > 0 else 360 + direction.value - 90
+        directions = []
+        if (self.city_schema[position[0] + -1 * int(math.sin(math.radians(to_right)))][position[1] + int(math.cos(math.radians(to_right)))] != TYPE.WALL.value):
+            directions.append(DIRECTIONS(to_right))
 
-    def update_city(self, component):
-        position = component.get_position()
-        name = component.get_name()
+        return directions
 
-        for i in range(CITY_WIDTH):
-            for j in range(CITY_HEIGHT):
-                if (self.city[i][j] == []): continue
-                if (self.city[i][j].get_name() == name): self.city[i][j] = []
 
-        self.city[position[0]][position[1]] = component
+
+    def update_city(self, name:str, position: List[int]):
+        for i in range(CITY_HEIGHT):
+            for j in range(CITY_WIDTH):
+                if (self.city[i][j] == ""): continue
+                if (self.city[i][j] == name): 
+                    self.city[i][j] = ""
+                    break
+
+        self.city[position[0]][position[1]] = name
         self.print_city()
+
 
     def print_city(self):
         self.stdscr.clear()
-        for i in range(CITY_WIDTH):
-            for j in range(CITY_HEIGHT):
-                self.stdscr.addstr("{char} ".format(char = self.city[i][j].get_type().value) if self.city[i][j] else "- ")
+        for i in range(CITY_HEIGHT):
+            for j in range(CITY_WIDTH):
+                if (self.city[i][j]): self.stdscr.addstr("*")
+                else: self.stdscr.addstr(self.city_schema[i][j])
             self.stdscr.addch("\n")
         print("", end="\r")
         self.stdscr.refresh()
