@@ -13,7 +13,7 @@ class CarAgent(Agent):
     def __init__(self, jid, password, environment: Environment):
         super().__init__(jid, password)
         self.environment = environment
-        self.position = [2, 0]
+        self.position = [2, 4]
         self.direction = DIRECTIONS.EAST
 
     class behave(CyclicBehaviour):
@@ -43,7 +43,6 @@ class CarAgent(Agent):
                 self.direction = directions[0]
             elif len(directions) > 1:
                 self.direction = random.choice(directions)
-            print(self.direction)
 
             new_position = self.position
             new_position[0] += -1 * int(math.sin(math.radians(self.direction.value)))

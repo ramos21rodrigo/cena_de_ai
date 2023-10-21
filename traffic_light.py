@@ -23,7 +23,6 @@ class TrafficLightAgent(Agent):
         ligth: COLORS
 
         def get_position(self):
-            print("nigger")
             return [1, 20]
 
         def get_type(self):
