@@ -13,11 +13,11 @@ async def main():
 
     environment = Environment()
 
-    car = CarAgent("car@localhost", "car", environment)
-    #car1 = CarAgent("car1@localhost", "car", environment)
+    car = CarAgent("car@localhost", "car", environment, [2,4], DIRECTIONS.EAST)
+    car1 = CarAgent("car1@localhost", "car", environment, [7,3], DIRECTIONS.NORTH)
     #light = TrafficLightAgent("traffic@localhost", "traffic", environment)
     await car.start()
-    #await car1.start()
+    await car1.start()
 
     #await wait_until_finished(car)
 

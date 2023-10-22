@@ -6,15 +6,15 @@ from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour
 
 from config import SIMULATION_SPEED, DIRECTIONS
-from environment import TYPE, Environment
+from environment import Environment
 
 class CarAgent(Agent):
 
-    def __init__(self, jid, password, environment: Environment):
+    def __init__(self, jid, password, environment: Environment, position, direction):
         super().__init__(jid, password)
         self.environment = environment
-        self.position = [2, 4]
-        self.direction = DIRECTIONS.EAST
+        self.position = position
+        self.direction = direction
 
     class behave(CyclicBehaviour):
         position: List[int]
@@ -45,12 +45,10 @@ class CarAgent(Agent):
                 self.direction = random.choice(directions)
 
             new_position = self.position
-            new_position[0] += -1 * int(math.sin(math.radians(self.direction.value)))
-            new_position[1] += int(math.cos(math.radians(self.direction.value)))
-
+            new_position[0] -= round(math.sin(math.radians(self.direction.value)))
+            new_position[1] += round(math.cos(math.radians(self.direction.value)))
             self.position = new_position
         
-
             self.environment.update_city(name=self.name, position=self.position)
             await asyncio.sleep(1 / SIMULATION_SPEED)
 
