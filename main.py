@@ -1,13 +1,13 @@
+import asyncio
 from environment import Environment
 import spade
-
-from spade import wait_until_finished
+import curses
 
 from config import DIRECTIONS
 
 # from traffic_light import TrafficLightAgent
 from car import CarAgent
-from traffic_light import TrafficLightAgent
+
 
 async def main():
 
@@ -21,7 +21,10 @@ async def main():
 
     #await wait_until_finished(car)
 
-
 if __name__ == "__main__":
-    spade.run(main())
+    try:
+        spade.run(main())
+    except KeyboardInterrupt:
+        curses.endwin()
+        print("finish")
 

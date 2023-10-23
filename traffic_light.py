@@ -1,6 +1,5 @@
 import asyncio
 from typing import List
-from environment import TYPE, Environment
 from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour
 
@@ -14,19 +13,13 @@ class COLORS(Enum):
     RED = "red"
 
 class TrafficLightAgent(Agent):
-    def __init__(self, jid, password, environment: Environment):
+    def __init__(self, jid, password, environment):
         super().__init__(jid, password)
         self.environment = environment
 
     class behave(CyclicBehaviour):
         position: List[int]
         ligth: COLORS
-
-        def get_position(self):
-            return [1, 20]
-
-        def get_type(self):
-            return TYPE.LIGHT
         
         async def on_start(self):
             self.name = self.agent.name

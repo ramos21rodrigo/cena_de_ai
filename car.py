@@ -6,21 +6,20 @@ from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour
 
 from config import SIMULATION_SPEED, DIRECTIONS
-from environment import Environment
 
 class CarAgent(Agent):
 
-    def __init__(self, jid, password, environment: Environment, position, direction):
+    def __init__(self, jid, password, environment, position, direction):
         super().__init__(jid, password)
-        self.environment = environment
         self.position = position
         self.direction = direction
+        self.environment = environment
 
     class behave(CyclicBehaviour):
         position: List[int]
         direction: DIRECTIONS
         name: str
-        environment: Environment
+        # environment: Environment avoid circular dependency
         stop: bool = False
 
         def get_position(self):
@@ -28,6 +27,16 @@ class CarAgent(Agent):
 
         def get_name(self):
             return self.name
+
+        def get_arrow(self):
+            if(self.direction == DIRECTIONS.NORTH):
+                return "↑"
+            if(self.direction == DIRECTIONS.SOUTH):
+                return "↓"
+            if(self.direction == DIRECTIONS.EAST):
+                return "→"
+            if(self.direction == DIRECTIONS.WEST):
+                return "←"
 
         async def on_start(self):
             self.position = self.agent.position
@@ -39,17 +48,24 @@ class CarAgent(Agent):
 
             directions = self.environment.get_possible_directions(position=self.position, direction=self.direction)
 
-            if len(directions) == 1:
-                self.direction = directions[0]
-            elif len(directions) > 1:
+            if len(directions) == 0:
+                self.kill()
+                return
+            if len(directions) >= 1:
                 self.direction = random.choice(directions)
 
             new_position = self.position
             new_position[0] -= round(math.sin(math.radians(self.direction.value)))
             new_position[1] += round(math.cos(math.radians(self.direction.value)))
+
+            name = self.environment.get_position(position=new_position)
+            #if (name != ""):
+                   
+            #else: 
             self.position = new_position
-        
-            self.environment.update_city(name=self.name, position=self.position)
+            self.environment.update_city(self)
+
+
             await asyncio.sleep(1 / SIMULATION_SPEED)
 
     async def setup(self):
