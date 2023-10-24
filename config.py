@@ -13,6 +13,11 @@ class DIRECTIONS(Enum):
     WEST = 180
     SOUTH = 270
 
+class COLORS(Enum):
+    RED = 1
+    YELLOW = 2
+    GREEN = 3
+
 MAP_FILE = "maps/city.txt"
 
 traffic_agents: List[Tuple[str, str]] = [
@@ -26,4 +31,10 @@ traffic_agents: List[Tuple[str, str]] = [
         ]
 
 stdscr = curses.initscr()
+curses.start_color()
+
+curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
+curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
+
 cursor.hide()

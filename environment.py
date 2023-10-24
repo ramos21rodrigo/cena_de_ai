@@ -1,5 +1,4 @@
 from typing import List, Union
-import os
 import math
 import curses
 from car import CarAgent
@@ -34,16 +33,13 @@ class Environment:
         for i in range(self.city_height):
             for j in range(self.city_width):
                 if (content[i][j] == TYPE.LIGHT.value):
-                    self.city_schema[i][j] = TrafficLightAgent(traffic_agents[0][0], traffic_agents[0][1], self)
-                    traffic_agents.pop(0)
+                    traffic = traffic_agents.pop(0)
+                    self.city_schema[i][j] = TrafficLightAgent(traffic[0], traffic[1], self)
                     continue
                 self.city_schema[i][j] = TYPE(content[i][j])
 
         self.stdscr = curses.initscr()
         
-
-    def get_position(self, position: List[int]):
-        return self.city[position[0]][position[1]]
 
     # find pattern [WALL, ROAD, ROAD, WALL]
     #                      [line_to_check] (distance between pattern and CAR)
@@ -106,10 +102,10 @@ class Environment:
 
         for i in range(self.city_height):
             for j in range(self.city_width):
-                if self.city[i][j] != None: 
+                if self.city[i][j] is not None: 
                     stdscr.addch("{}".format(self.city[i][j].get_arrow()))
-                elif type(self.city_schema[i][j]) == TrafficLightAgent:
-                    stdscr.addch("l")
+                elif isinstance(self.city_schema[i][j], TrafficLightAgent):
+                    stdscr.addch('|', curses.color_pair(1))
                 else:
                     #print(j, end="")
                     stdscr.addch(self.city_schema[i][j].value)
