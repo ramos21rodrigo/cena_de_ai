@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Tuple, Union
 import math
 import curses
 from car import CarAgent
@@ -20,8 +20,7 @@ class Environment:
     city_height: int
     city_width: int
 
-    def __init__(self):
-
+    async def create_city(self) -> None:
         file = open(MAP_FILE, "r")
         content = file.readlines()
 
@@ -34,16 +33,15 @@ class Environment:
             for j in range(self.city_width):
                 if (content[i][j] == TYPE.LIGHT.value):
                     traffic = traffic_agents.pop(0)
-                    self.city_schema[i][j] = TrafficLightAgent(traffic[0], traffic[1], self)
+                    agent = TrafficLightAgent(traffic[0], traffic[1], self)
+                    await agent.start()
+                    self.city_schema[i][j] = agent.my_behav
                     continue
                 self.city_schema[i][j] = TYPE(content[i][j])
 
-        self.stdscr = curses.initscr()
-        
-
-    # find pattern [WALL, ROAD, ROAD, WALL]
-    #                      [line_to_check] (distance between pattern and CAR)
-    #                           CAR
+    # find pattern [ROAD, ROAD]
+    #                   [line_to_check] (distance between pattern and CAR)
+    #                      CAR
     #
     # from the angle [left, right, up] 
     # using the math.sin() and math.cos() functions
@@ -56,11 +54,8 @@ class Environment:
         new_row: int = position[0] + delta_row * line_to_check
         new_col: int = position[1] + delta_col * line_to_check
 
-        # car: ooxo
-        #first_space: TYPE = self.city_schema[new_row + delta_col][new_col - delta_row] # ooox
-        second_space: TYPE = self.city_schema[new_row][new_col] # ooxo
-        third_space: TYPE = self.city_schema[new_row - delta_col][new_col + delta_row] # oxoo
-        #fourth_space: TYPE = self.city_schema[new_row - delta_col * 2][new_col + delta_row * 2] # xooo 
+        second_space: TYPE = self.city_schema[new_row][new_col]
+        third_space: TYPE = self.city_schema[new_row - delta_col][new_col + delta_row]
 
         return second_space != TYPE.WALL and third_space != TYPE.WALL
     
@@ -79,6 +74,8 @@ class Environment:
 
 
     def get_position(self, position: List[int]) -> str:
+        if isinstance(self.city_schema[position[0]][position[1]], TYPE): return ""
+        return self.city_schema[position[0]][position[1]].get_name()
         if self.city[position[0]][position[1]] == None: return ""
         return self.city[position[0]][position[1]].get_name()
 
@@ -103,14 +100,17 @@ class Environment:
         for i in range(self.city_height):
             for j in range(self.city_width):
                 if self.city[i][j] is not None: 
-                    stdscr.addch("{}".format(self.city[i][j].get_arrow()))
-                elif isinstance(self.city_schema[i][j], TrafficLightAgent):
-                    stdscr.addch('|', curses.color_pair(1))
-                else:
-                    #print(j, end="")
-                    stdscr.addch(self.city_schema[i][j].value)
-            stdscr.addch("\n")
+                    stdscr.addch(self.city[i][j].get_arrow())
+                    continue
 
+                if not isinstance(self.city_schema[i][j], TYPE):
+                    traffic: TrafficLightAgent = self.city_schema[i][j].get_character()
+                    stdscr.addch(traffic[0], curses.color_pair(traffic[1].value))
+                    continue
+
+                stdscr.addch(self.city_schema[i][j].value)
+
+            stdscr.addch('\n')
         stdscr.refresh()
 
 

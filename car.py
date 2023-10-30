@@ -3,6 +3,7 @@ import random
 import math
 from typing import List
 from spade.agent import Agent
+from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 
 from config import SIMULATION_SPEED, DIRECTIONS
@@ -15,7 +16,7 @@ class CarAgent(Agent):
         self.direction = direction
         self.environment = environment
 
-    class behave(CyclicBehaviour):
+    class behav(CyclicBehaviour):
         position: List[int]
         direction: DIRECTIONS
         name: str
@@ -44,6 +45,12 @@ class CarAgent(Agent):
             self.environment = self.agent.environment
             self.direction = self.agent.direction
 
+        async def send_message(self, to: str):
+            msg = Message("{}@localhost".format(to))
+            msg.set_metadata("performative", "request")
+            msg.set_metadata("request", "light color")
+            await self.send(msg)
+
         async def run(self):
 
             directions = self.environment.get_possible_directions(position=self.position, direction=self.direction)
@@ -59,15 +66,19 @@ class CarAgent(Agent):
             new_position[1] += round(math.cos(math.radians(self.direction.value)))
 
             name = self.environment.get_position(position=new_position)
-            #if (name != ""):
-                   
-            #else: 
+            if name:
+                await self.send_message(name)
+                response = await self.receive(100)
+                if not response: return
+                print (response.get_metadata("timeout"))
+                await asyncio.sleep(float(response.get_metadata("timeout")))
+            print("aa")
+
             self.position = new_position
             self.environment.update_city(self)
-
-
             await asyncio.sleep(1 / SIMULATION_SPEED)
+                
 
     async def setup(self):
-        self.my_behav = self.behave()
+        self.my_behav = self.behav()
         self.add_behaviour(self.my_behav)

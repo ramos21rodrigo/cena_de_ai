@@ -4,7 +4,7 @@ from enum import Enum
 from typing import List, Tuple
 
 
-SIMULATION_SPEED: int = 4
+SIMULATION_SPEED: int = 1
 
 class DIRECTIONS(Enum):
     NONE = -1
@@ -18,7 +18,7 @@ class COLORS(Enum):
     YELLOW = 2
     GREEN = 3
 
-MAP_FILE = "maps/city.txt"
+MAP_FILE = "maps/small_sample.txt"
 
 traffic_agents: List[Tuple[str, str]] = [
         ("traffic@localhost", "traffic"),
