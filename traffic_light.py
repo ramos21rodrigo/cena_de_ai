@@ -1,58 +1,61 @@
 import asyncio
 from typing import List, Tuple
+import time
 from spade.agent import Agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 
-from config import SIMULATION_SPEED, COLORS
+from config import SIMULATION_SPEED, COLORS, ACTIONS
 
 class TrafficLightAgent(Agent):
-    def __init__(self, jid, password, environment):
+    def __init__(self, jid: str, password: str, environment, horizontal: bool) -> None:
         super().__init__(jid, password)
+        self.horizontal = horizontal
         self.environment = environment
 
-    class behave(CyclicBehaviour):
+    class behav(CyclicBehaviour):
         position: List[int]
         ligth: COLORS
+        horizontal: bool
         name: str
 
         def get_character(self) -> Tuple[str, COLORS]:
-            return ("l", self.light)
+            return ("▇", self.light)
 
         def get_name(self) -> str:
             return self.name
         
-        async def on_start(self):
+        async def on_start(self) -> None:
+            self.horizontal = self.agent.horizontal
             self.name = self.agent.name
             self.environment = self.agent.environment
-            self.light = COLORS.RED
 
-        async def response(self, message: Message, timeout: float):
+        async def response(self, message: Message, action: ACTIONS) -> None:
             reply = message.make_reply()
-            reply.set_metadata("performative", "inform")
-            reply.set_metadata("timeout", str(timeout))
+            reply.body = action.value
             await self.send(reply)
 
-        async def run(self):
+        async def change_light(self, await_time: float, action: ACTIONS, color: COLORS) -> None:
+            self.light = color
+            timeout = await_time / SIMULATION_SPEED
+            current_time = time.time()
+            msg = None
 
-            msg = await self.receive(5 / SIMULATION_SPEED) 
-            if msg:
-                await self.response(msg, 5 / SIMULATION_SPEED)
-            self.light = COLORS.GREEN
-            self.environment.print_city()
+            while timeout > 0:
+                msg = await self.receive(timeout) 
+                timeout = (await_time - (time.time() - current_time)) / SIMULATION_SPEED
+                if msg:
+                    await self.response(msg, action)
 
-            msg = await self.receive(5 / SIMULATION_SPEED) 
-            if msg:
-                await self.response(msg, 0)
-            self.light = COLORS.YELLOW
-            self.environment.print_city()
+            if (not msg or action == ACTIONS.PASS): return
+            await self.response(msg, ACTIONS.PASS)
 
-            msg = await self.receive(1 / SIMULATION_SPEED) 
-            if msg:
-                await self.response(msg, 0)
-            self.light = COLORS.RED
-            self.environment.print_city()
 
-    async def setup(self):
-        self.my_behav = self.behave()
+        async def run(self) -> None:
+            await self.change_light(5, ACTIONS.STOP, COLORS.RED)
+            await self.change_light(5, ACTIONS.PASS, COLORS.GREEN)
+            await self.change_light(1, ACTIONS.PASS, COLORS.YELLOW)
+
+    async def setup(self) -> None:
+        self.my_behav = self.behav()
         self.add_behaviour(self.my_behav)

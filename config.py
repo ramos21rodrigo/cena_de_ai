@@ -4,7 +4,7 @@ from enum import Enum
 from typing import List, Tuple
 
 
-SIMULATION_SPEED: int = 1
+SIMULATION_SPEED: int = 4
 
 class DIRECTIONS(Enum):
     NONE = -1
@@ -17,6 +17,10 @@ class COLORS(Enum):
     RED = 1
     YELLOW = 2
     GREEN = 3
+
+class ACTIONS(Enum):
+    STOP = "stop"
+    PASS = "pass"
 
 MAP_FILE = "maps/small_sample.txt"
 
