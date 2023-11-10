@@ -44,27 +44,29 @@ class CarAgent(Agent):
             self.environment = self.agent.environment
             self.direction = self.agent.direction
 
-        async def ask_for_instruction(self, to: str) -> ACTIONS:
+        async def ask_for_instruction(self, to: str) -> None:
+
+            if not to: return
+
             msg = Message("{}@localhost".format(to))
             msg.set_metadata("performative", "request")
-            msg.set_metadata("request", "light color")
+            msg.set_metadata("request", "action")
             await self.send(msg)
 
-            response = await self.receive(999)
-            if not response: exit()
-            return ACTIONS(response.body) 
+            while True:
+                response = await self.receive(999)
+
+                if (response.body == ACTIONS.PASS): break
+                if not response: exit()
+
 
         async def move_or_wait(self):
             new_position = self.position
             new_position[0] -= round(math.sin(math.radians(self.direction.value)))
             new_position[1] += round(math.cos(math.radians(self.direction.value)))
 
-            to = self.environment.get_position(position=new_position)
-            while to:
-                instruction: ACTIONS = await self.ask_for_instruction(to)
-                if (instruction == ACTIONS.PASS): break
+            await self.ask_for_instruction(to=self.environment.get_position(position=new_position))
 
-                await asyncio.sleep(1 / SIMULATION_SPEED)
             self.position = new_position
 
         async def run(self):

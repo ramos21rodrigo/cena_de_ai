@@ -1,3 +1,4 @@
+import threading
 from typing import List, Tuple, Union
 import time
 import os
@@ -5,7 +6,7 @@ import math
 import curses
 from car import CarAgent
 
-from config import DIRECTIONS, MAP_FILE, traffic_agents, SIMULATION_SPEED, stdscr
+from config import DIRECTIONS, MAP_FILE, traffic_agents, SIMULATION_SPEED#, stdscr
 
 from enum import Enum
 
@@ -59,9 +60,12 @@ class Environment:
         new_row: int = position[0] + delta_row * line_to_check
         new_col: int = position[1] + delta_col * line_to_check
 
-        if (left_to_right):
+        if left_to_right:
             delta_col *= -1
             delta_row *= -1
+
+        if new_col < 0 or new_row < 0 or new_row >= self.city_height or new_col >= self.city_width:
+            return False
 
         second_space: TYPE = self.city_schema[new_row][new_col]
         third_space: TYPE = self.city_schema[new_row - delta_col][new_col + delta_row]
@@ -69,16 +73,16 @@ class Environment:
         return second_space != TYPE.WALL and third_space != TYPE.WALL
     
     def get_possible_directions(self, position: List[int], direction: DIRECTIONS) -> List[DIRECTIONS]:
-        to_left: int = direction.value + 90 if direction.value + 90 < 360 else 0 + direction.value - 90
-        to_right: int = direction.value - 90 if direction.value - 90 >= 0 else 360 + direction.value - 90
+        to_left: int = (direction.value + 90) % 360
+        to_right: int = (direction.value - 90) % 360
         directions = []
 
         if (self.check_pattern(position, direction.value, 2) or self.check_pattern(position, to_left, 2, True)):
             directions.append(direction)
-        if (self.check_pattern(position, to_right)):
-            directions.append(DIRECTIONS(to_right))
         if (self.check_pattern(position, to_left, 2)):
             directions.append(DIRECTIONS(to_left))
+        if (self.check_pattern(position, to_right)):
+            directions.append(DIRECTIONS(to_right))
         return directions
 
 
@@ -103,27 +107,29 @@ class Environment:
         self.city[position[0]][position[1]] = car
 
     def print_city(self):
+
         while True:
-            stdscr.clear()
+            #os.system("clear")
+            #stdscr.clear()
 
             for i in range(self.city_height):
                 for j in range(self.city_width):
                     if self.city[i][j] is not None: 
-                        stdscr.addch(self.city[i][j].get_arrow())
+                        #stdscr.addch(self.city[i][j].get_arrow())
+                        print(self.city[i][j].get_arrow(), end="")
                         continue
 
                     if not isinstance(self.city_schema[i][j], TYPE):
-                        traffic: TrafficLightAgent = self.city_schema[i][j].get_character()
-                        stdscr.addch(traffic[0], curses.color_pair(traffic[1].value))
+#                        traffic: TrafficLightAgent = self.city_schema[i][j].get_character()
+#                        stdscr.addch(traffic[0], curses.color_pair(traffic[1].value))
+                        print(self.city_schema[i][j].get_character()[0], end="" )
                         continue
 
-                    stdscr.addch(self.city_schema[i][j].value)
+                    #stdscr.addch(self.city_schema[i][j].value)
+                    print(self.city_schema[i][j].value, end="")
 
-                stdscr.addch('\n')
-            stdscr.refresh()
+                #stdscr.addch('\n')
+                print("")
+            #stdscr.refresh()
             time.sleep(1 / SIMULATION_SPEED)
-
-
-
- 
 

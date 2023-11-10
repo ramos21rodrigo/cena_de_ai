@@ -33,6 +33,7 @@ class TrafficLightAgent(Agent):
         async def response(self, message: Message, action: ACTIONS) -> None:
             reply = message.make_reply()
             reply.body = action.value
+            reply.set_metadata("performative", "inform")
             await self.send(reply)
 
         async def change_light(self, await_time: float, action: ACTIONS, color: COLORS) -> None:
