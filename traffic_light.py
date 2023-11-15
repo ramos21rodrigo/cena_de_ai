@@ -1,11 +1,11 @@
-import asyncio
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 import time
 from spade.agent import Agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 
-from config import SIMULATION_SPEED, COLORS, ACTIONS
+from config import SIMULATION_SPEED
+from enums import ACTIONS, COLORS
 
 class TrafficLightAgent(Agent):
     def __init__(self, jid: str, password: str, environment, horizontal: bool) -> None:
@@ -20,7 +20,9 @@ class TrafficLightAgent(Agent):
         name: str
 
         def get_character(self) -> Tuple[str, COLORS]:
-            return ("▇", self.light)
+            if (self.horizontal):
+                return ("-", self.light)
+            return ("|", self.light)
 
         def get_name(self) -> str:
             return self.name
@@ -30,26 +32,30 @@ class TrafficLightAgent(Agent):
             self.name = self.agent.name
             self.environment = self.agent.environment
 
-        async def response(self, message: Message, action: ACTIONS) -> None:
-            reply = message.make_reply()
-            reply.body = action.value
-            reply.set_metadata("performative", "inform")
-            await self.send(reply)
+        async def send_message(self, to: str, metadata: List[Tuple[str, str]], body: Optional[str] = None) -> None:
+            msg: Message = Message(to)
+            for data in metadata:
+                msg.set_metadata(data[0], data[1])
+            if body: msg.body = body
+                        
+            await self.send(msg)
 
         async def change_light(self, await_time: float, action: ACTIONS, color: COLORS) -> None:
             self.light = color
-            timeout = await_time / SIMULATION_SPEED
-            current_time = time.time()
-            msg = None
+            timeout: float = await_time / SIMULATION_SPEED
+            current_time: float = time.time()
+            msg: Message = None
+            stopped_car: Message = None
 
             while timeout > 0:
                 msg = await self.receive(timeout) 
                 timeout = (await_time - (time.time() - current_time)) / SIMULATION_SPEED
                 if msg:
-                    await self.response(msg, action)
+                    await self.send_message(str(msg.sender), [("performative", "inform")], action.value)
+                    stopped_car = str(msg.sender)
 
-            if (not msg or action == ACTIONS.PASS): return
-            await self.response(msg, ACTIONS.PASS)
+            if (not stopped_car or action == ACTIONS.PASS): return
+            await self.send_message(stopped_car, [("performative", "inform")], ACTIONS.PASS.value)
 
 
         async def run(self) -> None:
