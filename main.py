@@ -1,9 +1,9 @@
 from environment import Environment
 import spade
-import curses
 import threading
 
 from enums import DIRECTIONS
+from config import stdscr, curses
 
 from car import CarAgent
 
@@ -11,8 +11,10 @@ async def main():
     environment = Environment()
     await environment.create_city()
 
-    car = CarAgent("car@localhost", "car", environment, [1,2], DIRECTIONS.EAST)
-    car1 = CarAgent("car1@localhost", "car", environment, [1,5], DIRECTIONS.EAST)
+    stdscr.addstr("\nAdding cars...")
+    stdscr.refresh()
+    car = CarAgent("car@localhost", "car", environment, [5,2], DIRECTIONS.EAST)
+    car1 = CarAgent("car1@localhost", "car", environment, [4,2], DIRECTIONS.SOUTH)
     #car = CarAgent("car@localhost", "car", environment, [1,38], DIRECTIONS.EAST)
     #car1 = CarAgent("car1@localhost", "car", environment, [1,41], DIRECTIONS.EAST)
     await car.start()

@@ -1,7 +1,8 @@
 import curses
 from typing import List, Tuple
 
-SIMULATION_SPEED: int = 6
+SIMULATION_SPEED: int = 5
+TRAFFIC_LIGHT_WAIT_TIME: int = 20
 
 MAP_FILE: str = "maps/small_sample.txt"
 

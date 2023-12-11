@@ -1,4 +1,7 @@
+import asyncio
 import curses
+from os import system
+import os
 from typing import List, Optional, Tuple,  Union
 import time
 
@@ -20,7 +23,7 @@ class Environment:
     def get_city_width(self) -> int:
         return self.city_width
 
-    def get_schema_in_position(self, position: Tuple[int, int]):
+    def get_schema_in_position(self, position: Tuple[int, int]) -> Union[TrafficLightAgent.behav, TYPE]:
         return self.city_schema[position[0]][position[1]]
 
     def get_agent_in_position(self, position: Tuple[int, int]) -> Optional[str]:
@@ -31,9 +34,12 @@ class Environment:
         return None
 
     async def create_city(self) -> None:
+        agents: List[TrafficLightAgent.behav] = []
         file = open(MAP_FILE, "r")
         content = file.readlines()
 
+        stdscr.addstr("Creating city...")
+        stdscr.refresh()
         self.city_height = len(content)
         self.city_width = len(content[0]) - 1
         self.city_schema = [[TYPE.ROAD for i in range(self.city_width)] for j in range(self.city_height)]
@@ -43,11 +49,19 @@ class Environment:
             for j in range(self.city_width):
                 if (content[i][j] == TYPE.LIGHT.value):
                     traffic = traffic_agents.pop(0)
-                    agent = TrafficLightAgent(traffic[0], traffic[1], self, content[i - 1][j] == TYPE.ROAD.value and content[i + 1][j] == TYPE.ROAD.value)
+                    agent = TrafficLightAgent(traffic[0], traffic[1], self, (i, j))
                     await agent.start()
                     self.city_schema[i][j] = agent.my_behav
+                    agents.append(agent.my_behav)
                     continue
                 self.city_schema[i][j] = TYPE(content[i][j])
+
+        stdscr.addstr("\nConfiguring traffic lights...")
+        stdscr.refresh()
+        await asyncio.sleep(1)
+        for agent in agents:
+            agent.config_traffic_light()
+
 
     def update_city(self, car: CarAgent) -> None:
         position: List[int] = car.get_position()
@@ -63,6 +77,7 @@ class Environment:
         self.city[position[0]][position[1]] = car
 
     def print_city(self) -> None:
+        stdscr.scrollok(True)
 
         while True:
             stdscr.clear()

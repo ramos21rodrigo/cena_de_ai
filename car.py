@@ -1,14 +1,14 @@
 import asyncio
 import random
 import math
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from environment import TYPE
 from spade.agent import Agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 
 from config import SIMULATION_SPEED
-from enums import ACTIONS, DIRECTIONS
+from enums import ACTIONS, DIRECTIONS, PERFORMATIVES
 
 class CarAgent(Agent):
 
@@ -46,41 +46,44 @@ class CarAgent(Agent):
             self.environment = self.agent.environment
             self.direction = self.agent.direction
 
-        async def send_message(self, to: str, metadata: List[Tuple[str, str]], body: Optional[str] = None) -> None:
+        async def send_message(self, to: str, performative: PERFORMATIVES, body: Optional[ACTIONS] = None, addons: str = "") -> None:
             msg: Message = Message(to)
-            for data in metadata:
-                msg.set_metadata(data[0], data[1])
-            if body: msg.body = body
+            msg.set_metadata("performative", performative.value)
+            
+            if body: msg.body = f"{body.value};{addons}"
                         
             await self.send(msg)
-            
 
-        async def ask_for_instruction(self, to: str) -> None:
+        async def handle_communication(self, to: str) -> bool:
 
-            if not to: return
+            if not to: return True
 
-            stopped_car: str | None = None
-            await self.send_message("{}@localhost".format(to), [("performative", "request"), ("request", "action")])
+            stopped_car: Optional[str] = None
+            timeout = 3 / SIMULATION_SPEED
+            await self.send_message(f"{to}@localhost", PERFORMATIVES.REQUEST, ACTIONS.ASK_FOR_ACTION)
 
             while True:
-                response = await self.receive(999)
+                response = await self.receive(timeout)
+                if not response: return False
+                action, addons = response.body.split(';')
 
-                if response.get_metadata("request") == "action":
-                    await self.send_message(str(response.sender), [("performative", "inform")], ACTIONS.STOP.value)
+                if action == ACTIONS.STOP.value:
+                    timeout = 99999
+
+                if action == ACTIONS.ASK_FOR_ACTION.value:
                     stopped_car = str(response.sender)
+                    await self.send_message(stopped_car, PERFORMATIVES.INFORM, ACTIONS.STOP)
+                    await self.send_message(f"{to}@localhost", PERFORMATIVES.INFORM, ACTIONS.ONE_MORE_TO_QUEUE)
 
-                if (response.body == ACTIONS.PASS.value): break
-                if not response: exit()
+                #if response.get_metadata("request") == "action" or response.get_metadata("inform") == "addtoqueue":
+                    #await self.send_message("{}@localhost".format(to), [("performative", "inform"), ("inform", "addtoqueue")], ACTIONS.ONE_MORE_WAITING.value)
+
+                if (action == ACTIONS.PASS.value): break
 
             if stopped_car:
-                await self.send_message(stopped_car, [("performative", "inform")], ACTIONS.PASS.value)
+                await self.send_message(stopped_car, PERFORMATIVES.INFORM, ACTIONS.PASS)
+            return True
 
-        async def move_or_wait(self):
-            new_position = self.position
-            new_position[0] -= round(math.sin(math.radians(self.direction.value)))
-            new_position[1] += round(math.cos(math.radians(self.direction.value)))
-            await self.ask_for_instruction(self.environment.get_agent_in_position(new_position))
-            self.position = new_position
 
         def check_pattern(self, position: List[int], angle: int, line_to_check: int = 1, left_to_right: bool = False) -> bool:
     
@@ -133,6 +136,12 @@ class CarAgent(Agent):
             if len(directions) >= 1:
                 self.direction = random.choice(directions)
 
+        async def move_or_wait(self) -> None:
+            new_position = self.position
+            new_position[0] -= round(math.sin(math.radians(self.direction.value)))
+            new_position[1] += round(math.cos(math.radians(self.direction.value)))
+            if await self.handle_communication(self.environment.get_agent_in_position(new_position)):
+                self.position = new_position
 
         async def run(self):
             self.try_to_change_direction()
