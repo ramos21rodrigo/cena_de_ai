@@ -1,11 +1,9 @@
 import asyncio
 import curses
-from os import system
-import os
 from typing import List, Optional, Tuple,  Union
 import time
 
-from config import MAP_FILE, traffic_agents, SIMULATION_SPEED, stdscr
+from config import MAP_FILE, traffic_agents, SIMULATION_SPEED, city, stdscr
 from enums import TYPE
 
 from traffic_light import TrafficLightAgent
@@ -38,8 +36,8 @@ class Environment:
         file = open(MAP_FILE, "r")
         content = file.readlines()
 
-        stdscr.addstr("Creating city...")
-        stdscr.refresh()
+        city.addstr("Creating city...")
+        city.refresh()
         self.city_height = len(content)
         self.city_width = len(content[0]) - 1
         self.city_schema = [[TYPE.ROAD for i in range(self.city_width)] for j in range(self.city_height)]
@@ -56,11 +54,11 @@ class Environment:
                     continue
                 self.city_schema[i][j] = TYPE(content[i][j])
 
-        stdscr.addstr("\nConfiguring traffic lights...")
-        stdscr.refresh()
+        city.addstr("\nConfiguring traffic lights...")
+        city.refresh()
         await asyncio.sleep(1)
         for agent in agents:
-            agent.config_traffic_light()
+            agent.configure_traffic_light()
 
 
     def update_city(self, car: CarAgent) -> None:
@@ -80,22 +78,22 @@ class Environment:
         stdscr.scrollok(True)
 
         while True:
-            stdscr.clear()
+            city.clear()
 
             for i in range(self.city_height):
                 for j in range(self.city_width):
                     if isinstance(self.city[i][j], CarAgent.behav): 
-                        stdscr.addch(self.city[i][j].get_arrow())
+                        city.addch(self.city[i][j].get_arrow())
                         continue
 
                     if isinstance(self.city_schema[i][j], TrafficLightAgent.behav):
                         traffic: TrafficLightAgent = self.city_schema[i][j].get_character()
-                        stdscr.addch(traffic[0], curses.color_pair(traffic[1].value))
+                        city.addch(traffic[0], curses.color_pair(traffic[1].value))
                         continue
 
-                    stdscr.addch(self.city_schema[i][j].value)
+                    city.addch(self.city_schema[i][j].value)
 
-                stdscr.addch('\n')
-            stdscr.refresh()
+                city.addch('\n')
+            city.refresh()
             time.sleep(1 / SIMULATION_SPEED)
 

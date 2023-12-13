@@ -1,7 +1,7 @@
 import asyncio
 import random
 import math
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from environment import TYPE
 from spade.agent import Agent
 from spade.message import Message
@@ -19,11 +19,7 @@ class CarAgent(Agent):
         self.environment = environment
 
     class behav(CyclicBehaviour):
-        position: List[int]
-        direction: DIRECTIONS
-        name: str
         # environment: Environment avoid circular dependency
-        stop: bool = False
         arrows: dict[DIRECTIONS, str] = {
             DIRECTIONS.NORTH: "↑",
             DIRECTIONS.SOUTH: "↓",
@@ -31,20 +27,20 @@ class CarAgent(Agent):
             DIRECTIONS.WEST:"←"
         }
 
-        def get_position(self):
+        def get_position(self) -> List[int]:
             return self.position
 
-        def get_name(self):
+        def get_name(self) -> str:
             return self.name
 
-        def get_arrow(self):
+        def get_arrow(self) -> str:
             return self.arrows.get(self.direction, "*")
 
-        async def on_start(self):
-            self.position = self.agent.position
-            self.name = self.agent.name
+        async def on_start(self) -> None:
+            self.position: List[int] = self.agent.position
+            self.name: str = self.agent.name
             self.environment = self.agent.environment
-            self.direction = self.agent.direction
+            self.direction: DIRECTIONS = self.agent.direction
 
         async def send_message(self, to: str, performative: PERFORMATIVES, body: Optional[ACTIONS] = None, addons: str = "") -> None:
             msg: Message = Message(to)
@@ -65,12 +61,13 @@ class CarAgent(Agent):
             while True:
                 response = await self.receive(timeout)
                 if not response: return False
-                action, addons = response.body.split(';')
+                value, addon = response.body.split(";")
+                action = ACTIONS(value)
 
-                if action == ACTIONS.STOP.value:
+                if action == ACTIONS.STOP:
                     timeout = 99999
 
-                if action == ACTIONS.ASK_FOR_ACTION.value:
+                if action == ACTIONS.ASK_FOR_ACTION:
                     stopped_car = str(response.sender)
                     await self.send_message(stopped_car, PERFORMATIVES.INFORM, ACTIONS.STOP)
                     await self.send_message(f"{to}@localhost", PERFORMATIVES.INFORM, ACTIONS.ONE_MORE_TO_QUEUE)
@@ -78,7 +75,7 @@ class CarAgent(Agent):
                 #if response.get_metadata("request") == "action" or response.get_metadata("inform") == "addtoqueue":
                     #await self.send_message("{}@localhost".format(to), [("performative", "inform"), ("inform", "addtoqueue")], ACTIONS.ONE_MORE_WAITING.value)
 
-                if (action == ACTIONS.PASS.value): break
+                if (action == ACTIONS.PASS): break
 
             if stopped_car:
                 await self.send_message(stopped_car, PERFORMATIVES.INFORM, ACTIONS.PASS)
@@ -143,13 +140,13 @@ class CarAgent(Agent):
             if await self.handle_communication(self.environment.get_agent_in_position(new_position)):
                 self.position = new_position
 
-        async def run(self):
+        async def run(self) -> None:
             self.try_to_change_direction()
             await self.move_or_wait()
             self.environment.update_city(self)
             await asyncio.sleep(1 / SIMULATION_SPEED)
                 
 
-    async def setup(self):
+    async def setup(self) -> None:
         self.my_behav = self.behav()
         self.add_behaviour(self.my_behav)
