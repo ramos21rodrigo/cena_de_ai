@@ -73,21 +73,37 @@ class TrafficLightAgent(Agent):
  
         async def run(self) -> None:
 
-            msg = await self.receive(999) 
+            msg = await self.receive((time.time() - self.await_timeout) / SIMULATION_SPEED) 
+            if not msg:
+                self.await_timeout = 0
+                self.light = COLORS.YELLOW
+                for traffic in self.neighbor_traffic_names:
+                    await self.send_message(traffic, PERFORMATIVES.REQUEST, ACTIONS.CHANGE_COLOR)
+                return
 
-            if not msg: return
+            if self.await_timeout != 0:
+                self.await_timeout += time.time() - self.await_timeout # advancing the timeout time
+
             value, addon = msg.body.split(";")
+            console.addstr(f"{self.name}: {msg.sender} {value}\n")
             action = ACTIONS(value)
 
             if action == ACTIONS.ASK_FOR_ACTION:
+                if self.light == COLORS.GREEN: ## Allowded
+                    await self.send_message(str(msg.sender), PERFORMATIVES.INFORM, ACTIONS.PASS)
+                    return
+
+                self.light = COLORS.YELLOW
                 self.stopped_car = str(msg.sender)
+                await self.send_message(self.stopped_car, PERFORMATIVES.INFORM, ACTIONS.STOP)
                 for traffic in self.neighbor_traffic_names:
                     await self.send_message(traffic, PERFORMATIVES.REQUEST, ACTIONS.CHANGE_COLOR)
                 return
 
             if action == ACTIONS.CHANGE_COLOR:
-                self.light = COLORS.RED
                 if time.time() - self.green_light_timer > TRAFFIC_LIGHT_WAIT_TIME: ## Allowded
+                    self.green_light_timer = 0 
+                    self.light = COLORS.RED
                     await self.send_message(str(msg.sender), PERFORMATIVES.INFORM, ACTIONS.ALLOW)
                     return
                 await self.send_message(str(msg.sender), PERFORMATIVES.INFORM, ACTIONS.DENY, str(self.green_light_timer))
@@ -96,13 +112,17 @@ class TrafficLightAgent(Agent):
             if action == ACTIONS.ALLOW:
                 self.change_color_accepted += 1
                 if self.change_color_accepted >= len(self.neighbor_traffic_names):
+                    self.change_color_accepted = 0
                     self.light = COLORS.GREEN
                     await self.send_message(self.stopped_car, PERFORMATIVES.INFORM, ACTIONS.PASS)
-
                     if self.green_light_timer == 0:
                         self.green_light_timer = time.time()
+                return
 
             if action == ACTIONS.DENY:
+                self.await_timeout = float(addon)
+                self.change_color_accepted = 0
+                return
 
 
 

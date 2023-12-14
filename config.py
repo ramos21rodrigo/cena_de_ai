@@ -18,7 +18,9 @@ traffic_agents: List[Tuple[str, str]] = [
 
 stdscr = curses.initscr()
 city = curses.newwin(100, 40, 0, 0)
-console = curses.newwin(100, 100, 0, 40)
+console = curses.newwin(20, 100, 0, 40)
+console.scrollok(True)
+console.idlok(True)
 
 curses.start_color()
 

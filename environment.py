@@ -3,7 +3,7 @@ import curses
 from typing import List, Optional, Tuple,  Union
 import time
 
-from config import MAP_FILE, traffic_agents, SIMULATION_SPEED, city, stdscr
+from config import MAP_FILE, traffic_agents, SIMULATION_SPEED, city, stdscr, console
 from enums import TYPE
 
 from traffic_light import TrafficLightAgent
@@ -95,5 +95,6 @@ class Environment:
 
                 city.addch('\n')
             city.refresh()
+            console.refresh()
             time.sleep(1 / SIMULATION_SPEED)
 
