@@ -15,10 +15,12 @@ async def main():
     city.refresh()
     car = CarAgent("car@localhost", "car", environment, [5,2], DIRECTIONS.EAST)
     car1 = CarAgent("car1@localhost", "car", environment, [4,2], DIRECTIONS.SOUTH)
+    #car2 = CarAgent("car2@localhost", "car", environment, [3,2], DIRECTIONS.SOUTH)
     #car = CarAgent("car@localhost", "car", environment, [1,38], DIRECTIONS.EAST)
     #car1 = CarAgent("car1@localhost", "car", environment, [1,41], DIRECTIONS.EAST)
     await car.start()
     await car1.start()
+    #await car2.start()
 
     time_thread = threading.Thread(target=environment.print_city)
     time_thread.daemon = True

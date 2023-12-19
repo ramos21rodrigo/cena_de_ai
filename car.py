@@ -12,11 +12,12 @@ from enums import ACTIONS, DIRECTIONS, PERFORMATIVES
 
 class CarAgent(Agent):
 
-    def __init__(self, jid, password, environment, position, direction):
+    def __init__(self, jid, password, environment, position, direction, urgency_level):
         super().__init__(jid, password)
         self.position = position
         self.direction = direction
         self.environment = environment
+        self.urgency_level = urgency_level
 
     class behav(CyclicBehaviour):
         # environment: Environment avoid circular dependency
@@ -41,6 +42,7 @@ class CarAgent(Agent):
             self.name: str = self.agent.name
             self.environment = self.agent.environment
             self.direction: DIRECTIONS = self.agent.direction
+            self.urgency_level: int = self.agent.urgency_level
 
         async def send_message(self, to: str, performative: PERFORMATIVES, body: Optional[ACTIONS] = None, addons: str = "") -> None:
             msg: Message = Message(to)
@@ -70,7 +72,7 @@ class CarAgent(Agent):
                 if action == ACTIONS.ASK_FOR_ACTION:
                     stopped_car = str(response.sender)
                     await self.send_message(stopped_car, PERFORMATIVES.INFORM, ACTIONS.STOP)
-                    await self.send_message(f"{to}@localhost", PERFORMATIVES.INFORM, ACTIONS.ONE_MORE_TO_QUEUE)
+                    await self.send_message(f"{to}@localhost", PERFORMATIVES.INFORM, ACTIONS.ONE_MORE_TO_QUEUE, str(self.urgency_level) )
 
                 #if response.get_metadata("request") == "action" or response.get_metadata("inform") == "addtoqueue":
                     #await self.send_message("{}@localhost".format(to), [("performative", "inform"), ("inform", "addtoqueue")], ACTIONS.ONE_MORE_WAITING.value)
