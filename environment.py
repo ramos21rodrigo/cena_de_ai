@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple,  Union
 import time
 
 from config import MAP_FILE, traffic_agents, SIMULATION_SPEED, city, stdscr, console
-from enums import TYPE
+from enums import COLORS, TYPE
 
 from traffic_light import TrafficLightAgent
 from car import CarAgent
@@ -83,11 +83,12 @@ class Environment:
             for i in range(self.city_height):
                 for j in range(self.city_width):
                     if isinstance(self.city[i][j], CarAgent.behav): 
-                        city.addch(self.city[i][j].get_arrow())
+                        car: Tuple[str, COLORS] = self.city[i][j].get_arrow()
+                        city.addch(car[0], curses.color_pair(car[1].value))
                         continue
 
                     if isinstance(self.city_schema[i][j], TrafficLightAgent.behav):
-                        traffic: TrafficLightAgent = self.city_schema[i][j].get_character()
+                        traffic: Tuple[str, COLORS] = self.city_schema[i][j].get_character()
                         city.addch(traffic[0], curses.color_pair(traffic[1].value))
                         continue
 

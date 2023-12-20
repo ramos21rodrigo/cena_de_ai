@@ -48,7 +48,7 @@ class TrafficLightAgent(Agent):
 
             self.green_light_timer: float = 0
             self.await_timeout: float = 0
-            self.urgency_level: float = 0
+            self.urgency_level: int = 0
 
             self.change_color_accepted: int = 0
             self.stopped_car: Optional[str] = None
@@ -78,32 +78,32 @@ class TrafficLightAgent(Agent):
                 self.await_timeout = 0
                 self.light = COLORS.YELLOW
                 for traffic in self.neighbor_traffic_names:
-                    await self.send_message(traffic, PERFORMATIVES.REQUEST, ACTIONS.CHANGE_COLOR)
+                    await self.send_message(traffic, PERFORMATIVES.REQUEST, ACTIONS.CHANGE_COLOR, str(self.urgency_level))
                 return
 
             if self.await_timeout != 0:
                 self.await_timeout += time.time() - self.await_timeout # advancing the timeout time
 
             value, addon = msg.body.split(";")
-            console.addstr(f"{self.name}: {msg.sender} {value}\n")
             action = ACTIONS(value)
 
             if action == ACTIONS.ASK_FOR_ACTION:
-                if self.light == COLORS.GREEN: ## Allowded
+                if self.light == COLORS.GREEN:
                     await self.send_message(str(msg.sender), PERFORMATIVES.INFORM, ACTIONS.PASS)
                     return
 
                 self.light = COLORS.YELLOW
                 self.stopped_car = str(msg.sender)
-                self.urgency_level = float(addon)
+                self.urgency_level += int(addon)
                 await self.send_message(self.stopped_car, PERFORMATIVES.INFORM, ACTIONS.STOP)
                 for traffic in self.neighbor_traffic_names:
                     await self.send_message(traffic, PERFORMATIVES.REQUEST, ACTIONS.CHANGE_COLOR, str(self.urgency_level))
                 return
 
             if action == ACTIONS.CHANGE_COLOR:
-                if time.time() - self.green_light_timer > TRAFFIC_LIGHT_WAIT_TIME and self.urgency_level + URGENCY_GAP >= int(addon): ## Allowded
+                if time.time() - self.green_light_timer >= TRAFFIC_LIGHT_WAIT_TIME or self.urgency_level + URGENCY_GAP <= int(addon): ## Allowded
                     self.green_light_timer = 0 
+                    self.urgency_level = 0
                     self.light = COLORS.RED
                     await self.send_message(str(msg.sender), PERFORMATIVES.INFORM, ACTIONS.ALLOW)
                     return
@@ -123,14 +123,9 @@ class TrafficLightAgent(Agent):
 
             if action == ACTIONS.DENY:
                 self.await_timeout = float(addon)
+                console.addstr(f"{self.name}: {time.time() - self.await_timeout}s\n")
                 self.change_color_accepted = 0
                 return
-
-            if action == ACTIONS.ONE_MORE_TO_QUEUE:
-                self.urgency_level += 0.5
-
-
-
 
     async def setup(self) -> None:
         self.my_behav = self.behav()

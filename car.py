@@ -8,15 +8,16 @@ from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 
 from config import SIMULATION_SPEED
-from enums import ACTIONS, DIRECTIONS, PERFORMATIVES
+from enums import ACTIONS, COLORS, DIRECTIONS, PERFORMATIVES
 
 class CarAgent(Agent):
 
-    def __init__(self, jid, password, environment, position, direction, urgency_level):
+    def __init__(self, jid, password, environment, position, direction, color, urgency_level):
         super().__init__(jid, password)
         self.position = position
         self.direction = direction
         self.environment = environment
+        self.color = color
         self.urgency_level = urgency_level
 
     class behav(CyclicBehaviour):
@@ -34,14 +35,15 @@ class CarAgent(Agent):
         def get_name(self) -> str:
             return self.name
 
-        def get_arrow(self) -> str:
-            return self.arrows.get(self.direction, "*")
+        def get_arrow(self) -> Tuple[str, COLORS]:
+            return (self.arrows.get(self.direction, "*"), self.color)
 
         async def on_start(self) -> None:
             self.position: List[int] = self.agent.position
             self.name: str = self.agent.name
             self.environment = self.agent.environment
             self.direction: DIRECTIONS = self.agent.direction
+            self.color: COLORS = self.agent.color
             self.urgency_level: int = self.agent.urgency_level
 
         async def send_message(self, to: str, performative: PERFORMATIVES, body: Optional[ACTIONS] = None, addons: str = "") -> None:
@@ -58,11 +60,12 @@ class CarAgent(Agent):
 
             stopped_car: Optional[str] = None
             timeout = 3 / SIMULATION_SPEED
-            await self.send_message(f"{to}@localhost", PERFORMATIVES.REQUEST, ACTIONS.ASK_FOR_ACTION)
+            await self.send_message(f"{to}@localhost", PERFORMATIVES.REQUEST, ACTIONS.ASK_FOR_ACTION, str(self.urgency_level))
 
             while True:
                 response = await self.receive(timeout)
                 if not response: return False
+
                 value, addon = response.body.split(";")
                 action = ACTIONS(value)
 
@@ -72,7 +75,7 @@ class CarAgent(Agent):
                 if action == ACTIONS.ASK_FOR_ACTION:
                     stopped_car = str(response.sender)
                     await self.send_message(stopped_car, PERFORMATIVES.INFORM, ACTIONS.STOP)
-                    await self.send_message(f"{to}@localhost", PERFORMATIVES.INFORM, ACTIONS.ONE_MORE_TO_QUEUE, str(self.urgency_level) )
+                    await self.send_message(f"{to}@localhost", PERFORMATIVES.INFORM, ACTIONS.ASK_FOR_ACTION, addon)
 
                 #if response.get_metadata("request") == "action" or response.get_metadata("inform") == "addtoqueue":
                     #await self.send_message("{}@localhost".format(to), [("performative", "inform"), ("inform", "addtoqueue")], ACTIONS.ONE_MORE_WAITING.value)

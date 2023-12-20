@@ -1,6 +1,8 @@
 import curses
 from typing import List, Tuple
 
+from enums import COLORS
+
 SIMULATION_SPEED: int = 5
 TRAFFIC_LIGHT_WAIT_TIME: float = 20 / SIMULATION_SPEED
 URGENCY_GAP = 3
@@ -25,9 +27,11 @@ console.idlok(True)
 
 curses.start_color()
 
-curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
-curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
+curses.init_pair(COLORS.RED.value, curses.COLOR_RED, curses.COLOR_BLACK)
+curses.init_pair(COLORS.YELLOW.value, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+curses.init_pair(COLORS.GREEN.value, curses.COLOR_GREEN, curses.COLOR_BLACK)
+curses.init_pair(COLORS.BLUE.value, curses.COLOR_BLUE, curses.COLOR_BLACK)
+curses.init_pair(COLORS.WHITE.value, curses.COLOR_WHITE, curses.COLOR_BLACK)
 
 curses.curs_set(0)
 

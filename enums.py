@@ -11,6 +11,8 @@ class COLORS(Enum):
     RED = 1
     YELLOW = 2
     GREEN = 3
+    BLUE = 4
+    WHITE = 5
 
 class PERFORMATIVES(Enum):
     INFORM = "inform"
