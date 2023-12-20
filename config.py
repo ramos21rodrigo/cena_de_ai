@@ -4,7 +4,7 @@ from typing import List, Tuple
 from enums import COLORS
 
 SIMULATION_SPEED: int = 5
-TRAFFIC_LIGHT_WAIT_TIME: float = 20 / SIMULATION_SPEED
+TRAFFIC_LIGHT_WAIT_TIME: float = 50 / SIMULATION_SPEED
 URGENCY_GAP = 3
 
 MAP_FILE: str = "maps/small_sample.txt"

@@ -47,8 +47,9 @@ class TrafficLightAgent(Agent):
             self.light: COLORS = COLORS.RED
 
             self.green_light_timer: float = 0
-            self.await_timeout: float = 0
+            self.await_timeout: float = 99999999
             self.urgency_level: int = 0
+            self.order: int = 1
 
             self.change_color_accepted: int = 0
             self.stopped_car: Optional[str] = None
@@ -66,23 +67,28 @@ class TrafficLightAgent(Agent):
 
             msg: Message = Message(to)
             msg.set_metadata("performative", performative.value)
-            
             if body: msg.body = f"{body.value};{addons}"
                         
             await self.send(msg)
  
         async def run(self) -> None:
 
-            msg = await self.receive(time.time() - self.await_timeout) 
+            timer: float = time.time()
+            if self.await_timeout <= TRAFFIC_LIGHT_WAIT_TIME:
+                console.addstr(f"{self.await_timeout} \n")
+            msg = await self.receive(self.await_timeout) 
+
             if not msg:
-                self.await_timeout = 0
+                self.await_timeout = 999999
                 self.light = COLORS.YELLOW
+                console.addstr(f" {self.name} here\n")
                 for traffic in self.neighbor_traffic_names:
                     await self.send_message(traffic, PERFORMATIVES.REQUEST, ACTIONS.CHANGE_COLOR, str(self.urgency_level))
                 return
 
-            if self.await_timeout != 0:
-                self.await_timeout += time.time() - self.await_timeout # advancing the timeout time
+            if self.await_timeout <= TRAFFIC_LIGHT_WAIT_TIME:
+                self.await_timeout -= time.time() - timer # 20s - now(1000) - before self.recieve(995) = 15s
+                if self.await_timeout < 0: self.await_timeout = 0
 
             value, addon = msg.body.split(";")
             action = ACTIONS(value)
@@ -101,30 +107,33 @@ class TrafficLightAgent(Agent):
                 return
 
             if action == ACTIONS.CHANGE_COLOR:
-                if time.time() - self.green_light_timer >= TRAFFIC_LIGHT_WAIT_TIME or self.urgency_level + URGENCY_GAP <= int(addon): ## Allowded
-                    self.green_light_timer = 0 
+                self.green_light_timer -= time.time() - timer
+                if self.green_light_timer <= 0: ## Allowded
                     self.urgency_level = 0
                     self.light = COLORS.RED
+                    self.order = 1
                     await self.send_message(str(msg.sender), PERFORMATIVES.INFORM, ACTIONS.ALLOW)
                     return
-                await self.send_message(str(msg.sender), PERFORMATIVES.INFORM, ACTIONS.DENY, str(self.green_light_timer))
+                await self.send_message(str(msg.sender), PERFORMATIVES.INFORM, ACTIONS.DENY, str(self.green_light_timer + self.order))
+                self.order += 1
                 return
 
             if action == ACTIONS.ALLOW:
                 self.change_color_accepted += 1
+                console.addstr(f"cca {self.name} : {self.change_color_accepted}\n")
                 if self.change_color_accepted >= len(self.neighbor_traffic_names):
                     self.change_color_accepted = 0
                     self.urgency_level = 1
                     self.light = COLORS.GREEN
                     await self.send_message(self.stopped_car, PERFORMATIVES.INFORM, ACTIONS.PASS)
-                    if self.green_light_timer == 0:
-                        self.green_light_timer = time.time()
+                    if self.green_light_timer <= 0:
+                        self.green_light_timer = TRAFFIC_LIGHT_WAIT_TIME #20s
                 return
 
             if action == ACTIONS.DENY:
-                self.await_timeout = float(addon)
-                console.addstr(f"{self.name}: {time.time() - self.await_timeout}s\n")
-                self.change_color_accepted = 0
+                self.await_timeout = float(addon) #20s
+                console.addstr(f"{self.name}: {self.await_timeout}s\n")
+                self.change_color_accepted = 0 # if accepted == 2 it still needs 1+ for 0
                 return
 
     async def setup(self) -> None:

@@ -47,6 +47,8 @@ class CarAgent(Agent):
             self.urgency_level: int = self.agent.urgency_level
 
         async def send_message(self, to: str, performative: PERFORMATIVES, body: Optional[ACTIONS] = None, addons: str = "") -> None:
+            if not to: return
+
             msg: Message = Message(to)
             msg.set_metadata("performative", performative.value)
             
