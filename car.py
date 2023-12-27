@@ -57,7 +57,6 @@ class CarAgent(Agent):
             await self.send(msg)
 
         async def handle_communication(self, to: str) -> bool:
-
             if not to: return True
 
             stopped_car: Optional[str] = None
@@ -79,9 +78,6 @@ class CarAgent(Agent):
                     await self.send_message(stopped_car, PERFORMATIVES.INFORM, ACTIONS.STOP)
                     await self.send_message(f"{to}@localhost", PERFORMATIVES.INFORM, ACTIONS.ASK_FOR_ACTION, addon)
 
-                #if response.get_metadata("request") == "action" or response.get_metadata("inform") == "addtoqueue":
-                    #await self.send_message("{}@localhost".format(to), [("performative", "inform"), ("inform", "addtoqueue")], ACTIONS.ONE_MORE_WAITING.value)
-
                 if (action == ACTIONS.PASS): break
 
             if stopped_car:
@@ -90,7 +86,6 @@ class CarAgent(Agent):
 
 
         def check_pattern(self, position: List[int], angle: int, line_to_check: int = 1, left_to_right: bool = False) -> bool:
-    
             # find pattern [ROAD, ROAD]
             #                 [line_to_check] (distance between pattern and CAR)
             #                     CAR

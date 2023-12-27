@@ -5,7 +5,7 @@ from spade.agent import Agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 
-from config import SIMULATION_SPEED, TRAFFIC_LIGHT_WAIT_TIME, URGENCY_GAP, console
+from config import TRAFFIC_LIGHT_WAIT_TIME, URGENCY_GAP, console, disruption_agent
 from enums import ACTIONS, COLORS, DIRECTIONS, PERFORMATIVES, TYPE
 
 class TrafficLightAgent(Agent):
@@ -94,13 +94,14 @@ class TrafficLightAgent(Agent):
             action = ACTIONS(value)
 
             if action == ACTIONS.ASK_FOR_ACTION:
+                await self.send_message(disruption_agent[0], PERFORMATIVES.INFORM, ACTIONS.USED)
                 if self.light == COLORS.GREEN:
                     await self.send_message(str(msg.sender), PERFORMATIVES.INFORM, ACTIONS.PASS)
                     return
 
+                self.urgency_level += int(addon)
                 self.light = COLORS.YELLOW
                 self.stopped_car = str(msg.sender)
-                self.urgency_level += int(addon)
                 await self.send_message(self.stopped_car, PERFORMATIVES.INFORM, ACTIONS.STOP)
                 for traffic in self.neighbor_traffic_names:
                     await self.send_message(traffic, PERFORMATIVES.REQUEST, ACTIONS.CHANGE_COLOR, str(self.urgency_level))
@@ -108,9 +109,10 @@ class TrafficLightAgent(Agent):
 
             if action == ACTIONS.CHANGE_COLOR:
                 self.green_light_timer -= time.time() - timer
-                if self.green_light_timer <= 0: ## Allowded
+                if self.green_light_timer <= 0 or self.urgency_level + URGENCY_GAP < int(addon): ## Allowded
                     self.urgency_level = 0
                     self.light = COLORS.RED
+                    self.green_light_timer = 0
                     self.order = 1
                     await self.send_message(str(msg.sender), PERFORMATIVES.INFORM, ACTIONS.ALLOW)
                     return
@@ -133,8 +135,7 @@ class TrafficLightAgent(Agent):
             if action == ACTIONS.DENY:
                 self.await_timeout = float(addon) #20s
                 console.addstr(f"{self.name}: {self.await_timeout}s\n")
-                self.change_color_accepted = 0 # if accepted == 2 it still needs 1+ for 0
-                return
+                self.change_color_accepted -= len(self.neighbor_traffic_names) - 1 # if accepted == 2 it still needs 1+ for 0
 
     async def setup(self) -> None:
         self.my_behav = self.behav()
