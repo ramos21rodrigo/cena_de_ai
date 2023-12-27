@@ -1,14 +1,17 @@
 import curses
 from typing import List, Tuple
+import sys
 
 from enums import COLORS
 
 SIMULATION_SPEED: int = 5
-TRAFFIC_LIGHT_WAIT_TIME: float = 50 / SIMULATION_SPEED
+TRAFFIC_LIGHT_WAIT_TIME: float = 20 / SIMULATION_SPEED
 URGENCY_GAP: int = 3
-DAY_DURATION: float = 1 / SIMULATION_SPEED #minute
+DAY_DURATION: float = 20 / SIMULATION_SPEED #minute
 
 MAP_FILE: str = "maps/small_sample.txt"
+
+disruption_agent: Tuple[str, str] = ("disruption@localhost", "disruption")
 
 traffic_agents: List[Tuple[str, str]] = [
         ("traffic@localhost", "traffic"),

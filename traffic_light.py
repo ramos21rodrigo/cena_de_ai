@@ -76,7 +76,7 @@ class TrafficLightAgent(Agent):
             timer: float = time.time()
             if self.await_timeout <= TRAFFIC_LIGHT_WAIT_TIME:
                 console.addstr(f"{self.await_timeout} \n")
-            msg = await self.receive(self.await_timeout) 
+            msg: Optional[Message] = await self.receive(self.await_timeout) 
 
             if not msg:
                 self.await_timeout = 999999

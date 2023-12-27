@@ -64,7 +64,7 @@ class CarAgent(Agent):
             await self.send_message(f"{to}@localhost", PERFORMATIVES.REQUEST, ACTIONS.ASK_FOR_ACTION, str(self.urgency_level))
 
             while True:
-                response = await self.receive(timeout)
+                response: Optional[Message] = await self.receive(timeout) 
                 if not response: return False
 
                 value, addon = response.body.split(";")
