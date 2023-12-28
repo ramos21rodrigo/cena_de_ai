@@ -7,7 +7,7 @@ from enums import COLORS
 SIMULATION_SPEED: int = 5
 TRAFFIC_LIGHT_WAIT_TIME: float = 20 / SIMULATION_SPEED
 URGENCY_GAP: int = 3
-DAY_DURATION: float = 20 / SIMULATION_SPEED #minute
+DAY_DURATION: float = 60 / SIMULATION_SPEED #minute
 
 MAP_FILE: str = "maps/small_sample.txt"
 

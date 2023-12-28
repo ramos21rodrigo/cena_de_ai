@@ -5,7 +5,7 @@ from spade.agent import Agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 
-from config import TRAFFIC_LIGHT_WAIT_TIME, URGENCY_GAP, console, disruption_agent
+from config import TRAFFIC_LIGHT_WAIT_TIME, URGENCY_GAP, disruption_agent
 from enums import ACTIONS, COLORS, DIRECTIONS, PERFORMATIVES, TYPE
 
 class TrafficLightAgent(Agent):
@@ -38,6 +38,7 @@ class TrafficLightAgent(Agent):
         async def on_start(self) -> None:
             # environment: Environment avoid circular dependency
 
+            self.is_on: bool = True
             self.position: Tuple[int, int] = self.agent.position
             self.name: str = self.agent.name
             self.environment = self.agent.environment
@@ -74,14 +75,11 @@ class TrafficLightAgent(Agent):
         async def run(self) -> None:
 
             timer: float = time.time()
-            if self.await_timeout <= TRAFFIC_LIGHT_WAIT_TIME:
-                console.addstr(f"{self.await_timeout} \n")
             msg: Optional[Message] = await self.receive(self.await_timeout) 
 
             if not msg:
                 self.await_timeout = 999999
                 self.light = COLORS.YELLOW
-                console.addstr(f" {self.name} here\n")
                 for traffic in self.neighbor_traffic_names:
                     await self.send_message(traffic, PERFORMATIVES.REQUEST, ACTIONS.CHANGE_COLOR, str(self.urgency_level))
                 return
@@ -92,6 +90,14 @@ class TrafficLightAgent(Agent):
 
             value, addon = msg.body.split(";")
             action = ACTIONS(value)
+
+            if action == ACTIONS.OFF:
+                self.await_timeout = 999999
+                self.is_on = False
+
+            if action == ACTIONS.ON:
+                self.is_on = True
+
 
             if action == ACTIONS.ASK_FOR_ACTION:
                 await self.send_message(disruption_agent[0], PERFORMATIVES.INFORM, ACTIONS.USED)
@@ -122,7 +128,6 @@ class TrafficLightAgent(Agent):
 
             if action == ACTIONS.ALLOW:
                 self.change_color_accepted += 1
-                console.addstr(f"cca {self.name} : {self.change_color_accepted}\n")
                 if self.change_color_accepted >= len(self.neighbor_traffic_names):
                     self.change_color_accepted = 0
                     self.urgency_level = 1
@@ -134,7 +139,6 @@ class TrafficLightAgent(Agent):
 
             if action == ACTIONS.DENY:
                 self.await_timeout = float(addon) #20s
-                console.addstr(f"{self.name}: {self.await_timeout}s\n")
                 self.change_color_accepted -= len(self.neighbor_traffic_names) - 1 # if accepted == 2 it still needs 1+ for 0
 
     async def setup(self) -> None:

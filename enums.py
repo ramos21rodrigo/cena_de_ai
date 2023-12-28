@@ -27,6 +27,8 @@ class ACTIONS(Enum):
     ASK_FOR_ACTION = "ask_for_action"
     ONE_MORE_TO_QUEUE = "one_more_to_queue"
     USED = "used"
+    OFF = "off"
+    ON = "on"
 
 class TYPE(Enum):
     ROAD = " "

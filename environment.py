@@ -14,6 +14,10 @@ class Environment:
     city: List[List[Optional[CarAgent.behav]]]
     city_height: int
     city_width: int
+    used_traffics: List[str]
+
+    def get_used_traffics(self) -> List[str]:
+        return self.used_traffics
 
     def get_city_height(self) -> int:
         return self.city_height
@@ -47,10 +51,14 @@ class Environment:
             for j in range(self.city_width):
                 if (content[i][j] == TYPE.LIGHT.value):
                     traffic = traffic_agents.pop(0)
+                    self.used_traffics.append(traffic[0])
+
                     agent = TrafficLightAgent(traffic[0], traffic[1], self, (i, j))
                     await agent.start()
+
                     self.city_schema[i][j] = agent.my_behav
                     agents.append(agent.my_behav)
+
                     continue
                 self.city_schema[i][j] = TYPE(content[i][j])
 
