@@ -38,7 +38,6 @@ class TrafficLightAgent(Agent):
         async def on_start(self) -> None:
             # environment: Environment avoid circular dependency
 
-            self.is_on: bool = True
             self.position: Tuple[int, int] = self.agent.position
             self.name: str = self.agent.name
             self.environment = self.agent.environment
@@ -93,15 +92,16 @@ class TrafficLightAgent(Agent):
 
             if action == ACTIONS.OFF:
                 self.await_timeout = 999999
-                self.is_on = False
+                self.light = COLORS.GRAY
+                if self.stopped_car:
+                    await self.send_message(self.stopped_car, PERFORMATIVES.INFORM, ACTIONS.PASS)
 
-            if action == ACTIONS.ON:
-                self.is_on = True
-
+            if action == ACTIONS.ON and self.light == COLORS.GRAY:
+                self.light = COLORS.RED
 
             if action == ACTIONS.ASK_FOR_ACTION:
                 await self.send_message(disruption_agent[0], PERFORMATIVES.INFORM, ACTIONS.USED)
-                if self.light == COLORS.GREEN:
+                if self.light in [COLORS.GREEN, COLORS.GRAY]:
                     await self.send_message(str(msg.sender), PERFORMATIVES.INFORM, ACTIONS.PASS)
                     return
 

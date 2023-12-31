@@ -12,7 +12,7 @@ async def main():
     environment = Environment()
     await environment.create_city()
 
-    disruption = DisruptionAgent(disruption_agent[0], disruption_agent[1])
+    disruption = DisruptionAgent(disruption_agent[0], disruption_agent[1], environment)
     await disruption.start()
 
     city.addstr("\nAdding cars...\n")

@@ -1,6 +1,5 @@
 import curses
 from typing import List, Tuple
-import sys
 
 from enums import COLORS
 
@@ -52,6 +51,7 @@ curses.init_pair(COLORS.YELLOW.value, curses.COLOR_YELLOW, curses.COLOR_BLACK)
 curses.init_pair(COLORS.GREEN.value, curses.COLOR_GREEN, curses.COLOR_BLACK)
 curses.init_pair(COLORS.BLUE.value, curses.COLOR_BLUE, curses.COLOR_BLACK)
 curses.init_pair(COLORS.WHITE.value, curses.COLOR_WHITE, curses.COLOR_BLACK)
+curses.init_pair(COLORS.GRAY.value, 242, curses.COLOR_BLACK)
 
 curses.curs_set(0)
 

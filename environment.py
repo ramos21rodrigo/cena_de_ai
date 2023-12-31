@@ -42,6 +42,7 @@ class Environment:
 
         city.addstr("Creating city...")
         city.refresh()
+        self.used_traffics = []
         self.city_height = len(content)
         self.city_width = len(content[0]) - 1
         self.city_schema = [[TYPE.ROAD for i in range(self.city_width)] for j in range(self.city_height)]

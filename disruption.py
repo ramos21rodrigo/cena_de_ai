@@ -14,15 +14,16 @@ from environment import Environment
 class DisruptionAgent(Agent):
     def __init__(self, jid: str, password: str, environment: Environment) -> None:
         super().__init__(jid, password)
-        self.used_traffics = environment.get_used_traffics()
+        self.environment = environment
 
     class behav(CyclicBehaviour):
         async def on_start(self) -> None:
-            self.used_traffics: List[str] = self.agent.used_traffics
+            self.used_traffics: List[str] = self.agent.environment.get_used_traffics()
             self.daily_schedule: List[int] = [0 for _ in range(24)]
             self.hour_counter: int = 0
             self.modal = LinearRegression()
             self.time_left: float = DAY_DURATION
+            self.lowest_hours: List[int] = []
 
         async def send_message(self, to: Optional[str], performative: PERFORMATIVES, body: Optional[ACTIONS] = None) -> None:
             if not to: return
