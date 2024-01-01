@@ -37,9 +37,10 @@ traffic_agents: List[Tuple[str, str]] = [
         ]
 
 stdscr = curses.initscr()
-city = curses.newwin(100, 40, 0, 0)
+city = curses.newwin(100, 100, 0, 32)
 #city = curses.newwin(200, 200, 0, 0)
-console = curses.newwin(20, 100, 0, 40)
+clock = curses.newwin(1, 30, 0, 1)
+console = curses.newwin(50, 30, 2, 1)
 #console = curses.newwin(20, 100, 0, 200)
 console.scrollok(True)
 console.idlok(True)

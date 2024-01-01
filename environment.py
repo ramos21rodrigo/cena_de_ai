@@ -3,7 +3,7 @@ import curses
 from typing import List, Optional, Tuple,  Union
 import time
 
-from config import MAP_FILE, traffic_agents, SIMULATION_SPEED, city, stdscr, console
+from config import MAP_FILE, traffic_agents, SIMULATION_SPEED, city, stdscr, console, clock
 from enums import COLORS, TYPE
 
 from traffic_light import TrafficLightAgent
@@ -40,8 +40,8 @@ class Environment:
         file = open(MAP_FILE, "r")
         content = file.readlines()
 
-        city.addstr("Creating city...")
-        city.refresh()
+        console.addstr("Creating city...\n")
+        console.refresh()
         self.used_traffics = []
         self.city_height = len(content)
         self.city_width = len(content[0]) - 1
@@ -63,8 +63,8 @@ class Environment:
                     continue
                 self.city_schema[i][j] = TYPE(content[i][j])
 
-        city.addstr("\nConfiguring traffic lights...")
-        city.refresh()
+        console.addstr("Configuring traffic lights...\n")
+        console.refresh()
         await asyncio.sleep(1)
         for agent in agents:
             agent.configure_traffic_light()
@@ -104,7 +104,9 @@ class Environment:
                     city.addch(self.city_schema[i][j].value)
 
                 city.addch('\n')
+
             city.refresh()
             console.refresh()
+            clock.refresh()
             time.sleep(1 / SIMULATION_SPEED)
 

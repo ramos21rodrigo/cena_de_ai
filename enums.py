@@ -30,6 +30,7 @@ class ACTIONS(Enum):
     USED = "used"
     OFF = "off"
     ON = "on"
+    GREEN_LIGHT_TIMER = "green_light_timer"
 
 class TYPE(Enum):
     ROAD = " "

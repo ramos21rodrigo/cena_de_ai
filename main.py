@@ -4,7 +4,7 @@ import spade
 import threading
 
 from enums import COLORS, DIRECTIONS
-from config import city, curses, disruption_agent
+from config import console, curses, disruption_agent
 
 from car import CarAgent
 
@@ -15,8 +15,9 @@ async def main():
     disruption = DisruptionAgent(disruption_agent[0], disruption_agent[1], environment)
     await disruption.start()
 
-    city.addstr("\nAdding cars...\n")
-    city.refresh()
+    console.addstr("Adding cars...\n")
+    console.addstr("Console logs:\n\n")
+    console.refresh()
     car = CarAgent("car@localhost", "car", environment, [5,2], DIRECTIONS.EAST, COLORS.WHITE, 1)
     car1 = CarAgent("car1@localhost", "car", environment, [4,2], DIRECTIONS.SOUTH, COLORS.WHITE, 1)
     emergency = CarAgent("car2@localhost", "car", environment, [5,2], DIRECTIONS.SOUTH, COLORS.BLUE, 10)

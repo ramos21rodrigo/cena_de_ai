@@ -5,7 +5,7 @@ from spade.agent import Agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 
-from config import TRAFFIC_LIGHT_WAIT_TIME, URGENCY_GAP, disruption_agent
+from config import TRAFFIC_LIGHT_WAIT_TIME, URGENCY_GAP, disruption_agent, console
 from enums import ACTIONS, COLORS, DIRECTIONS, PERFORMATIVES, TYPE
 
 class TrafficLightAgent(Agent):
@@ -46,6 +46,7 @@ class TrafficLightAgent(Agent):
             self.go_to: DIRECTIONS = DIRECTIONS.NONE
             self.light: COLORS = COLORS.RED
 
+            self.green_light_starter_timer: float = TRAFFIC_LIGHT_WAIT_TIME
             self.green_light_timer: float = 0
             self.await_timeout: float = 99999999
             self.urgency_level: int = 0
@@ -83,20 +84,25 @@ class TrafficLightAgent(Agent):
                     await self.send_message(traffic, PERFORMATIVES.REQUEST, ACTIONS.CHANGE_COLOR, str(self.urgency_level))
                 return
 
-            if self.await_timeout <= TRAFFIC_LIGHT_WAIT_TIME:
+            if self.await_timeout <= self.green_light_starter_timer:
                 self.await_timeout -= time.time() - timer # 20s - now(1000) - before self.recieve(995) = 15s
                 if self.await_timeout < 0: self.await_timeout = 0
 
             value, addon = msg.body.split(";")
             action = ACTIONS(value)
 
+            if action == ACTIONS.GREEN_LIGHT_TIMER:
+                self.green_light_starter_timer = float(addon)
+
             if action == ACTIONS.OFF:
+                console.addstr(f"{self.name} lights: OFF\n")
                 self.await_timeout = 999999
                 self.light = COLORS.GRAY
                 if self.stopped_car:
                     await self.send_message(self.stopped_car, PERFORMATIVES.INFORM, ACTIONS.PASS)
 
             if action == ACTIONS.ON and self.light == COLORS.GRAY:
+                console.addstr(f"{self.name} lights: ON\n")
                 self.light = COLORS.RED
 
             if action == ACTIONS.ASK_FOR_ACTION:
@@ -134,7 +140,7 @@ class TrafficLightAgent(Agent):
                     self.light = COLORS.GREEN
                     await self.send_message(self.stopped_car, PERFORMATIVES.INFORM, ACTIONS.PASS)
                     if self.green_light_timer <= 0:
-                        self.green_light_timer = TRAFFIC_LIGHT_WAIT_TIME #20s
+                        self.green_light_timer = self.green_light_starter_timer
                 return
 
             if action == ACTIONS.DENY:
