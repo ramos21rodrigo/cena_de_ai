@@ -1,14 +1,12 @@
 import time 
-from typing import Dict, List, Optional, Tuple
 import numpy as np
-from config import DAY_DURATION, SIMULATION_SPEED, TRAFFIC_LIGHT_WAIT_TIME
-from enums import ACTIONS, PERFORMATIVES
+from config import ACTIONS, TRAFFIC_LIGHT_WAIT_TIME
 from sklearn.linear_model import LinearRegression
 from spade.agent import Agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 
-from config import console, clock
+from config import console 
 from environment import Environment
 
 class DisruptionAgent(Agent):
@@ -18,37 +16,29 @@ class DisruptionAgent(Agent):
 
     class behav(CyclicBehaviour):
         async def on_start(self) -> None:
-            self.model: LinearRegression = LinearRegression()
-            self.model_green: LinearRegression = LinearRegression()
+            self.model = LinearRegression()
+            self.model_green = LinearRegression()
 
-            self.used_traffics: List[str] = self.agent.environment.get_used_traffics()
-            self.traffics: Dict[str, int] = {i: 0 for i in self.used_traffics}
+            self.used_traffics = self.agent.environment.used_traffics
+            self.traffics = {i: 0 for i in self.used_traffics}
 
-            self.daily_schedule: List[int] = [0 for _ in range(24)]
-            self.hour_counter: int = 0
-            self.time_left: float = DAY_DURATION
-            self.lowest_hours: List[int] = []
+            self.daily_schedule = [0 for _ in range(24)]
+            self.hour_counter = 0
+            self.time_left = DAY_DURATION
+            self.lowest_hours = []
 
-            clock.addstr("24:00 -> 0x")
-
-
-        async def send_message(self, to: Optional[str], performative: PERFORMATIVES, body: Optional[ACTIONS] = None, addons: str = "") -> None:
-            if not to: return
-
-            msg: Message = Message(to)
-            msg.set_metadata("performative", performative.value)
+        async def send_message(self, to, performative, body = None, addons: str = ""):
+            msg = Message(to)
+            msg.set_metadata("performative", performative)
             if body: msg.body = f"{body.value};{addons}"
-                        
             await self.send(msg)
 
         async def run(self) -> None:
 
-            timer: float = time.time()
-            msg: Optional[Message] = await self.receive(self.time_left) 
+            timer = time.time()
+            msg = await self.receive(self.time_left) 
             if not msg: 
                 self.hour_counter += 1
-                clock.clear()
-                clock.addstr(f"{self.hour_counter:02}:00 -> {self.daily_schedule[self.hour_counter - 1]}x")
                 self.time_left = DAY_DURATION
 
                 if self.hour_counter == 24:
@@ -64,9 +54,9 @@ class DisruptionAgent(Agent):
                     for light, usage_count in self.traffics.items():
                         self.model_green.fit([[usage_count]], [usage_count])
                     
-                        green_light_duration = TRAFFIC_LIGHT_WAIT_TIME + int(self.model_green.predict([[usage_count]])[0]) / SIMULATION_SPEED
+                        green_light_duration = TRAFFIC_LIGHT_WAIT_TIME + int(self.model_green.predict([[usage_count]])[0]) 
                         console.addstr(f"{light.split('@')[0]}: {green_light_duration}s\n")
-                        await self.send_message(light, PERFORMATIVES.INFORM, ACTIONS.GREEN_LIGHT_TIMER, str(green_light_duration))
+                        await self.send_message(light, "inform", ACTIONS.GREEN_LIGHT_TIMER, str(green_light_duration))
 
                     self.hour_counter = 0
                     self.daily_schedule = [0 for _ in range(24)]
@@ -75,7 +65,7 @@ class DisruptionAgent(Agent):
             
                 action = ACTIONS.OFF if self.hour_counter in self.lowest_hours else ACTIONS.ON
                 for traffic in self.used_traffics:
-                    await self.send_message(traffic, PERFORMATIVES.INFORM, action)
+                    await self.send_message(traffic, "inform", action)
                 return
 
             self.time_left -= time.time() - timer

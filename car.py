@@ -1,125 +1,92 @@
 import asyncio
 import random
 import math
-from typing import List, Optional, Tuple
-from environment import TYPE
 from spade.agent import Agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 
-from config import SIMULATION_SPEED
-from enums import ACTIONS, COLORS, DIRECTIONS, PERFORMATIVES
+from config import ACTIONS, DIRECTIONS, TYPE
 
 class CarAgent(Agent):
 
-    def __init__(self, jid, password, environment, position, direction, color, urgency_level):
+    def __init__(self, jid, password, environment, position, direction, urgent):
         super().__init__(jid, password)
+        self.environment = environment
         self.position = position
         self.direction = direction
-        self.environment = environment
-        self.color = color
-        self.urgency_level = urgency_level
+        self.urgent = urgent
 
     class behav(CyclicBehaviour):
-        # environment: Environment avoid circular dependency
-        arrows: dict[DIRECTIONS, str] = {
-            DIRECTIONS.NORTH: "↑",
-            DIRECTIONS.SOUTH: "↓",
-            DIRECTIONS.EAST: "→",
-            DIRECTIONS.WEST:"←"
-        }
-
-        def get_position(self) -> List[int]:
-            return self.position
-
-        def get_name(self) -> str:
-            return self.name
-
-        def get_arrow(self) -> Tuple[str, COLORS]:
-            return (self.arrows.get(self.direction, "*"), self.color)
-
-        async def on_start(self) -> None:
-            self.position: List[int] = self.agent.position
-            self.name: str = self.agent.name
+        async def on_start(self):
+            self.position = self.agent.position
+            self.name = self.agent.name
             self.environment = self.agent.environment
-            self.direction: DIRECTIONS = self.agent.direction
-            self.color: COLORS = self.agent.color
-            self.urgency_level: int = self.agent.urgency_level
+            self.direction = self.agent.direction
+            self.urgent = self.agent.urgent
 
-        async def send_message(self, to: str, performative: PERFORMATIVES, body: Optional[ACTIONS] = None, addons: str = "") -> None:
-            if not to: return
-
-            msg: Message = Message(to)
-            msg.set_metadata("performative", performative.value)
-            
+        async def send_message(self, to, performative, body = None, addons: str = ""):
+            msg = Message(to)
+            msg.set_metadata("performative", performative)
             if body: msg.body = f"{body.value};{addons}"
-                        
             await self.send(msg)
 
-        async def handle_communication(self, to: str) -> bool:
+        async def handle_communication(self, to):
             if not to: return True
 
-            stopped_car: Optional[str] = None
-            timeout = 3 / SIMULATION_SPEED
-            await self.send_message(f"{to}@localhost", PERFORMATIVES.REQUEST, ACTIONS.ASK_FOR_ACTION, str(self.urgency_level))
+            timeout = 3
+            stopped_car = ""
+            await self.send_message(f"{to}@localhost", "request", ACTIONS.ASK_FOR_ACTION, str(self.urgent))
 
             while True:
-                response: Optional[Message] = await self.receive(timeout) 
-                if not response: return False
+                msg = await self.receive(timeout) 
+                if not msg: return False
 
-                value, addon = response.body.split(";")
+                value, additional_info = msg.body.split(";")
+                sender = str(msg.sender)
                 action = ACTIONS(value)
 
-                if action == ACTIONS.STOP:
-                    timeout = 99999
+                if (action == ACTIONS.PASS): 
+                    if stopped_car:
+                        await self.send_message(stopped_car, "inform", ACTIONS.PASS)
+                    return True
 
-                if action == ACTIONS.ASK_FOR_ACTION:
-                    stopped_car = str(response.sender)
-                    await self.send_message(stopped_car, PERFORMATIVES.INFORM, ACTIONS.STOP)
-                    await self.send_message(f"{to}@localhost", PERFORMATIVES.INFORM, ACTIONS.ASK_FOR_ACTION, addon)
+                elif action == ACTIONS.STOP:
+                    timeout = 1000000
 
-                if (action == ACTIONS.PASS): break
-
-            if stopped_car:
-                await self.send_message(stopped_car, PERFORMATIVES.INFORM, ACTIONS.PASS)
-            return True
+                elif action == ACTIONS.ASK_FOR_ACTION:
+                    stopped_car = sender
+                    await self.send_message(stopped_car, "inform", ACTIONS.STOP)
+                    await self.send_message(f"{to}@localhost", "inform", ACTIONS.ASK_FOR_ACTION, additional_info)
 
 
-        def check_pattern(self, position: List[int], angle: int, line_to_check: int = 1, left_to_right: bool = False) -> bool:
-            # find pattern [ROAD, ROAD]
-            #                 [line_to_check] (distance between pattern and CAR)
-            #                     CAR
-            #
-            # from the angle [left, right, up] 
-            # using the math.sin() and math.cos() functions
+        def check_pattern(self, position, angle, line_to_check = 1, left_to_right = False):
+            angle_radians = math.radians(angle)
     
-            angle_radians: float = math.radians(angle)
+            delta_row = -round(math.sin(angle_radians))
+            delta_col = round(math.cos(angle_radians))
     
-            delta_row: int = -round(math.sin(angle_radians))
-            delta_col: int = round(math.cos(angle_radians))
-    
-            new_row: int = position[0] + delta_row * line_to_check
-            new_col: int = position[1] + delta_col * line_to_check
+            new_row = position[0] + delta_row * line_to_check
+            new_col = position[1] + delta_col * line_to_check
     
             if left_to_right:
                 delta_col *= -1
                 delta_row *= -1
     
-            if new_col < 0 or new_row < 0 or new_row >= self.environment.get_city_height() or new_col >= self.environment.get_city_width():
+            if new_col < 0 or new_row < 0 or new_row >= self.environment.city_height or new_col >= self.environment.city_width:
                 return False
     
-            second_space: TYPE = self.environment.get_schema_in_position((new_row, new_col))
-            third_space: TYPE = self.environment.get_schema_in_position((new_row - delta_col, new_col + delta_row))
+            second_space = self.environment.city_schema[new_row][new_col]
+            third_space = self.environment.city_schema[new_row - delta_col][new_col + delta_row]
 
             return second_space != TYPE.WALL and third_space != TYPE.WALL
 
-        def try_to_change_direction(self) -> None:
-            direction: DIRECTIONS = self.direction
-            position: List[int] = self.position
+        def try_to_change_direction(self):
+            direction = self.direction
+            position = self.position
 
-            to_left: int = (direction.value + 90) % 360
-            to_right: int = (direction.value - 90) % 360
-            directions: List[DIRECTIONS] = []
+            to_left = (direction.value + 90) % 360
+            to_right = (direction.value - 90) % 360
+            directions = []
 
             if (self.check_pattern(position, direction.value, 2) or self.check_pattern(position, to_left, 2, True)):
                 directions.append(direction)
@@ -130,25 +97,23 @@ class CarAgent(Agent):
 
             if len(directions) == 0:
                 self.kill()
-                return
-
-            if len(directions) >= 1:
+            elif len(directions) >= 1:
                 self.direction = random.choice(directions)
 
-        async def move_or_wait(self) -> None:
+        async def move_or_wait(self):
             new_position = self.position
             new_position[0] -= round(math.sin(math.radians(self.direction.value)))
             new_position[1] += round(math.cos(math.radians(self.direction.value)))
-            if await self.handle_communication(self.environment.get_agent_in_position(new_position)):
+            if await self.handle_communication(self.environment.get_agent(new_position)):
                 self.position = new_position
 
-        async def run(self) -> None:
+        async def run(self):
             self.try_to_change_direction()
             await self.move_or_wait()
             self.environment.update_city(self)
-            await asyncio.sleep(1 / SIMULATION_SPEED)
+            await asyncio.sleep(1)
                 
 
-    async def setup(self) -> None:
+    async def setup(self):
         self.my_behav = self.behav()
         self.add_behaviour(self.my_behav)

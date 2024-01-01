@@ -1,47 +1,24 @@
 import asyncio
 import curses
-from typing import List, Optional, Tuple,  Union
-import time
-
-from config import MAP_FILE, traffic_agents, SIMULATION_SPEED, city, stdscr, console, clock
-from enums import COLORS, TYPE
-
 from traffic_light import TrafficLightAgent
 from car import CarAgent
+import time
+from config import FILE, city, stdscr, console, COLORS, TYPE
 
 class Environment:
-    city_schema: List[List[Union[TrafficLightAgent.behav, TYPE]]]
-    city: List[List[Optional[CarAgent.behav]]]
-    city_height: int
-    city_width: int
-    used_traffics: List[str]
-
-    def get_used_traffics(self) -> List[str]:
-        return self.used_traffics
-
-    def get_city_height(self) -> int:
-        return self.city_height
-
-    def get_city_width(self) -> int:
-        return self.city_width
-
-    def get_schema_in_position(self, position: Tuple[int, int]) -> Union[TrafficLightAgent.behav, TYPE]:
-        return self.city_schema[position[0]][position[1]]
-
-    def get_agent_in_position(self, position: Tuple[int, int]) -> Optional[str]:
+    def get_agent(self, position):
         if isinstance(self.city[position[0]][position[1]], CarAgent.behav):
-            return self.city[position[0]][position[1]].get_name()
+            return self.city[position[0]][position[1]].name
         if isinstance(self.city_schema[position[0]][position[1]], TrafficLightAgent.behav): 
-            return self.city_schema[position[0]][position[1]].get_name()
+            return self.city_schema[position[0]][position[1]].name
         return None
 
-    async def create_city(self) -> None:
-        agents: List[TrafficLightAgent.behav] = []
-        file = open(MAP_FILE, "r")
+    async def generate(self):
+        agents = []
+        file = open(FILE, "r")
         content = file.readlines()
+        agent_count = 0
 
-        console.addstr("Creating city...\n")
-        console.refresh()
         self.used_traffics = []
         self.city_height = len(content)
         self.city_width = len(content[0]) - 1
@@ -51,10 +28,11 @@ class Environment:
         for i in range(self.city_height):
             for j in range(self.city_width):
                 if (content[i][j] == TYPE.LIGHT.value):
-                    traffic = traffic_agents.pop(0)
-                    self.used_traffics.append(traffic[0])
+                    agent_count += 1
+                    agent = f"traffic{agent_count}@localhost"
+                    self.used_traffics.append(agent)
 
-                    agent = TrafficLightAgent(traffic[0], traffic[1], self, (i, j))
+                    agent = TrafficLightAgent(agent, "traffic", self, (i, j))
                     await agent.start()
 
                     self.city_schema[i][j] = agent.my_behav
@@ -63,50 +41,41 @@ class Environment:
                     continue
                 self.city_schema[i][j] = TYPE(content[i][j])
 
-        console.addstr("Configuring traffic lights...\n")
-        console.refresh()
-        await asyncio.sleep(1)
+        await asyncio.sleep(2)
         for agent in agents:
             agent.configure_traffic_light()
 
 
-    def update_city(self, car: CarAgent) -> None:
-        position: List[int] = car.get_position()
-        name: str = car.get_name()
+    def update_city(self, car):
+        position = car.position
+        name = car.name
 
         for i in range(self.city_height):
             for j in range(self.city_width):
                 if (self.city[i][j] == None): continue
-                if (self.city[i][j].get_name() == name): 
+                if (self.city[i][j].name == name): 
                     self.city[i][j] = None
                     break
 
         self.city[position[0]][position[1]] = car
 
-    def print_city(self) -> None:
+    def print_city(self):
         stdscr.scrollok(True)
 
         while True:
-            city.clear()
+            #city.clear()
 
             for i in range(self.city_height):
                 for j in range(self.city_width):
                     if isinstance(self.city[i][j], CarAgent.behav): 
-                        car: Tuple[str, COLORS] = self.city[i][j].get_arrow()
-                        city.addch(car[0], curses.color_pair(car[1].value))
-                        continue
-
-                    if isinstance(self.city_schema[i][j], TrafficLightAgent.behav):
-                        traffic: Tuple[str, COLORS] = self.city_schema[i][j].get_character()
-                        city.addch(traffic[0], curses.color_pair(traffic[1].value))
-                        continue
-
-                    city.addch(self.city_schema[i][j].value)
-
+                        city.addch("*", curses.color_pair(COLORS.BLUE.value if self.city[i][j].urgent else COLORS.WHITE.value))
+                    elif isinstance(self.city_schema[i][j], TrafficLightAgent.behav):
+                        city.addch("+", curses.color_pair(self.city_schema[i][j].light.value))
+                    else:
+                        city.addch(self.city_schema[i][j].value)
                 city.addch('\n')
 
             city.refresh()
             console.refresh()
-            clock.refresh()
-            time.sleep(1 / SIMULATION_SPEED)
+            time.sleep(1)
 
