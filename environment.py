@@ -3,7 +3,7 @@ import curses
 from typing import List, Optional, Tuple,  Union
 import time
 
-from config import MAP_FILE, traffic_agents, SIMULATION_SPEED, city, stdscr, console
+from config import MAP_FILE, traffic_agents, SIMULATION_SPEED, city, stdscr, console, clock
 from enums import COLORS, TYPE
 
 from traffic_light import TrafficLightAgent
@@ -14,6 +14,10 @@ class Environment:
     city: List[List[Optional[CarAgent.behav]]]
     city_height: int
     city_width: int
+    used_traffics: List[str]
+
+    def get_used_traffics(self) -> List[str]:
+        return self.used_traffics
 
     def get_city_height(self) -> int:
         return self.city_height
@@ -36,8 +40,9 @@ class Environment:
         file = open(MAP_FILE, "r")
         content = file.readlines()
 
-        city.addstr("Creating city...")
-        city.refresh()
+        console.addstr("Creating city...\n")
+        console.refresh()
+        self.used_traffics = []
         self.city_height = len(content)
         self.city_width = len(content[0]) - 1
         self.city_schema = [[TYPE.ROAD for i in range(self.city_width)] for j in range(self.city_height)]
@@ -47,15 +52,19 @@ class Environment:
             for j in range(self.city_width):
                 if (content[i][j] == TYPE.LIGHT.value):
                     traffic = traffic_agents.pop(0)
+                    self.used_traffics.append(traffic[0])
+
                     agent = TrafficLightAgent(traffic[0], traffic[1], self, (i, j))
                     await agent.start()
+
                     self.city_schema[i][j] = agent.my_behav
                     agents.append(agent.my_behav)
+
                     continue
                 self.city_schema[i][j] = TYPE(content[i][j])
 
-        city.addstr("\nConfiguring traffic lights...")
-        city.refresh()
+        console.addstr("Configuring traffic lights...\n")
+        console.refresh()
         await asyncio.sleep(1)
         for agent in agents:
             agent.configure_traffic_light()
@@ -95,7 +104,9 @@ class Environment:
                     city.addch(self.city_schema[i][j].value)
 
                 city.addch('\n')
+
             city.refresh()
             console.refresh()
+            clock.refresh()
             time.sleep(1 / SIMULATION_SPEED)
 
