@@ -1,8 +1,9 @@
+from disruption import DisruptionAgent
 from environment import Environment
 import spade
 import threading
 
-from config import DIRECTIONS, curses
+from header import DIRECTIONS, curses
 
 from car import CarAgent
 
@@ -10,8 +11,8 @@ async def main():
     environment = Environment()
     await environment.generate()
 
-    #disruption = DisruptionAgent(disruption_agent[0], disruption_agent[1], environment)
-    #await disruption.start()
+    disruption = DisruptionAgent("disruption@localhost",  "disruption")
+    await disruption.start()
 
     car = CarAgent("car@localhost", "car", environment, [5,2], DIRECTIONS.EAST, False)
     car1 = CarAgent("car1@localhost", "car", environment, [4,2], DIRECTIONS.SOUTH, False)

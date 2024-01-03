@@ -4,7 +4,7 @@ from spade.agent import Agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 
-from config import TRAFFIC_LIGHT_WAIT_TIME, ACTIONS, COLORS, DIRECTIONS, TYPE
+from header import TRAFFIC_LIGHT_WAIT_TIME, ACTIONS, COLORS, DIRECTIONS, TYPE
 
 class TrafficLightAgent(Agent):
     def __init__(self, jid, password, environment, position):
@@ -73,7 +73,7 @@ class TrafficLightAgent(Agent):
                     self.green_light_timer = 0
                     await self.send_message(sender, "inform", ACTIONS.ALLOW)
                 else:
-                    await self.send_message(msg, "inform", ACTIONS.DENY)
+                    await self.send_message(sender, "inform", ACTIONS.DENY)
 
             elif action == ACTIONS.ALLOW:
                 self.change_color_accepted += 1

@@ -5,7 +5,7 @@ from spade.agent import Agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 
-from config import ACTIONS, DIRECTIONS, TYPE
+from header import ACTIONS, DIRECTIONS, TYPE, console
 
 class CarAgent(Agent):
 
@@ -32,6 +32,7 @@ class CarAgent(Agent):
 
         async def handle_communication(self, to):
             if not to: return True
+            console.addstr(f"{to}")
 
             timeout = 3
             stopped_car = ""
@@ -111,7 +112,7 @@ class CarAgent(Agent):
             self.try_to_change_direction()
             await self.move_or_wait()
             self.environment.update_city(self)
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.25)
                 
 
     async def setup(self):

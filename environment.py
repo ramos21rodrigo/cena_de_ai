@@ -3,19 +3,20 @@ import curses
 from traffic_light import TrafficLightAgent
 from car import CarAgent
 import time
-from config import FILE, city, stdscr, console, COLORS, TYPE
+from header import city, stdscr, console, COLORS, TYPE
 
 class Environment:
     def get_agent(self, position):
         if isinstance(self.city[position[0]][position[1]], CarAgent.behav):
             return self.city[position[0]][position[1]].name
-        if isinstance(self.city_schema[position[0]][position[1]], TrafficLightAgent.behav): 
+        elif isinstance(self.city_schema[position[0]][position[1]], TrafficLightAgent.behav): 
             return self.city_schema[position[0]][position[1]].name
-        return None
+        else:
+            return None
 
     async def generate(self):
         agents = []
-        file = open(FILE, "r")
+        file = open("map.txt", "r")
         content = file.readlines()
         agent_count = 0
 
@@ -63,12 +64,12 @@ class Environment:
         stdscr.scrollok(True)
 
         while True:
-            #city.clear()
+            city.clear()
 
             for i in range(self.city_height):
                 for j in range(self.city_width):
                     if isinstance(self.city[i][j], CarAgent.behav): 
-                        city.addch("*", curses.color_pair(COLORS.BLUE.value if self.city[i][j].urgent else COLORS.WHITE.value))
+                        city.addch("*", curses.color_pair(COLORS.RED.value if self.city[i][j].urgent else COLORS.WHITE.value))
                     elif isinstance(self.city_schema[i][j], TrafficLightAgent.behav):
                         city.addch("+", curses.color_pair(self.city_schema[i][j].light.value))
                     else:
@@ -77,5 +78,5 @@ class Environment:
 
             city.refresh()
             console.refresh()
-            time.sleep(1)
+            time.sleep(0.25)
 
