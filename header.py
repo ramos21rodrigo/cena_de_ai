@@ -11,6 +11,8 @@ class ACTIONS(Enum):
     DENY = "4"
     CHANGE_COLOR = "5"
     ASK_FOR_ACTION = "6"
+    CONNECT = "7"
+    UPDATE_SPEED = "8"
 
 class COLORS(Enum):
     RED = 1
@@ -33,9 +35,9 @@ class TYPE(Enum):
 stdscr = curses.initscr()
 city = curses.newwin(100, 30, 0, 0)
 
-console = curses.newwin(100, 25, 0, 30)
-console.scrollok(True)
-console.idlok(True)
+logs = curses.newwin(100, 25, 0, 30)
+logs.scrollok(True)
+logs.idlok(True)
 
 curses.start_color()
 curses.curs_set(0)

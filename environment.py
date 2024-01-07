@@ -3,7 +3,7 @@ import curses
 from traffic_light import TrafficLightAgent
 from car import CarAgent
 import time
-from header import city, stdscr, console, COLORS, TYPE
+from header import city, stdscr, logs, COLORS, TYPE
 
 class Environment:
     def get_agent(self, position):
@@ -77,6 +77,6 @@ class Environment:
                 city.addch('\n')
 
             city.refresh()
-            console.refresh()
+            logs.refresh()
             time.sleep(0.25)
 

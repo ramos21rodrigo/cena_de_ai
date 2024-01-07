@@ -5,7 +5,7 @@ from spade.agent import Agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 
-from header import ACTIONS, DIRECTIONS, TYPE, console
+from header import ACTIONS, DIRECTIONS, TYPE
 
 class CarAgent(Agent):
 
@@ -23,6 +23,8 @@ class CarAgent(Agent):
             self.environment = self.agent.environment
             self.direction = self.agent.direction
             self.urgent = self.agent.urgent
+            self.speed = 0.25
+            await self.send_message("disruption@localhost", "inform", ACTIONS.CONNECT)
 
         async def send_message(self, to, performative, body = None, addons: str = ""):
             msg = Message(to)
@@ -32,7 +34,6 @@ class CarAgent(Agent):
 
         async def handle_communication(self, to):
             if not to: return True
-            console.addstr(f"{to}")
 
             timeout = 3
             stopped_car = ""
@@ -51,10 +52,13 @@ class CarAgent(Agent):
                         await self.send_message(stopped_car, "inform", ACTIONS.PASS)
                     return True
 
-                elif action == ACTIONS.STOP:
+                #if action == ACTIONS.UPDATE_SPEED:
+                    self.speed = 0.25 + (0.25 * int(additional_info)) 
+
+                if action == ACTIONS.STOP:
                     timeout = 1000000
 
-                elif action == ACTIONS.ASK_FOR_ACTION:
+                if action == ACTIONS.ASK_FOR_ACTION:
                     stopped_car = sender
                     await self.send_message(stopped_car, "inform", ACTIONS.STOP)
                     await self.send_message(f"{to}@localhost", "inform", ACTIONS.ASK_FOR_ACTION, additional_info)
@@ -112,7 +116,7 @@ class CarAgent(Agent):
             self.try_to_change_direction()
             await self.move_or_wait()
             self.environment.update_city(self)
-            await asyncio.sleep(0.25)
+            await asyncio.sleep(self.speed)
                 
 
     async def setup(self):
