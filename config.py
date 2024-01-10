@@ -3,12 +3,12 @@ from typing import List, Tuple
 
 from enums import COLORS
 
-SIMULATION_SPEED: int = 5
+SIMULATION_SPEED: int = 15
 TRAFFIC_LIGHT_WAIT_TIME: float = 20 / SIMULATION_SPEED
 URGENCY_GAP: int = 3
 DAY_DURATION: float = 60 / SIMULATION_SPEED #minute
 
-MAP_FILE: str = "maps/small_sample.txt"
+MAP_FILE: str = "maps/big_sample.txt"
 
 disruption_agent: Tuple[str, str] = ("disruption@localhost", "disruption")
 
@@ -38,10 +38,8 @@ traffic_agents: List[Tuple[str, str]] = [
 
 stdscr = curses.initscr()
 city = curses.newwin(100, 100, 0, 32)
-#city = curses.newwin(200, 200, 0, 0)
 clock = curses.newwin(1, 30, 0, 1)
-console = curses.newwin(50, 30, 2, 1)
-#console = curses.newwin(20, 100, 0, 200)
+console = curses.newwin(20, 30, 2, 1)
 console.scrollok(True)
 console.idlok(True)
 

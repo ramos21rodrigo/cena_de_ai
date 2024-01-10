@@ -95,14 +95,12 @@ class TrafficLightAgent(Agent):
                 self.green_light_starter_timer = float(addon)
 
             if action == ACTIONS.OFF:
-                console.addstr(f"{self.name} lights: OFF\n")
                 self.await_timeout = 999999
                 self.light = COLORS.GRAY
                 if self.stopped_car:
                     await self.send_message(self.stopped_car, PERFORMATIVES.INFORM, ACTIONS.PASS)
 
             if action == ACTIONS.ON and self.light == COLORS.GRAY:
-                console.addstr(f"{self.name} lights: ON\n")
                 self.light = COLORS.RED
 
             if action == ACTIONS.ASK_FOR_ACTION:
@@ -144,7 +142,8 @@ class TrafficLightAgent(Agent):
                 return
 
             if action == ACTIONS.DENY:
-                self.await_timeout = float(addon) #20s
+                self.await_timeout = float(addon) #Xs
+                console.addstr(f"{self.name}: time {self.await_timeout:.2f}s | lvl {self.urgency_level}\n")
                 self.change_color_accepted -= len(self.neighbor_traffic_names) - 1 # if accepted == 2 it still needs 1+ for 0
 
     async def setup(self) -> None:

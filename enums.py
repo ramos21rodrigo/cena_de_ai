@@ -28,8 +28,8 @@ class ACTIONS(Enum):
     ASK_FOR_ACTION = "ask_for_action"
     ONE_MORE_TO_QUEUE = "one_more_to_queue"
     USED = "used"
-    OFF = "off"
-    ON = "on"
+    OFF = "OFF"
+    ON = "ON"
     GREEN_LIGHT_TIMER = "green_light_timer"
 
 class TYPE(Enum):

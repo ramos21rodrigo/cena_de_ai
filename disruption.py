@@ -65,7 +65,7 @@ class DisruptionAgent(Agent):
                         self.model_green.fit([[usage_count]], [usage_count])
                     
                         green_light_duration = TRAFFIC_LIGHT_WAIT_TIME + int(self.model_green.predict([[usage_count]])[0]) / SIMULATION_SPEED
-                        console.addstr(f"{light.split('@')[0]}: {green_light_duration}s\n")
+                        console.addstr(f"{light.split('@')[0]}: +{green_light_duration:.2f}s\n")
                         await self.send_message(light, PERFORMATIVES.INFORM, ACTIONS.GREEN_LIGHT_TIMER, str(green_light_duration))
 
                     self.hour_counter = 0
@@ -74,6 +74,7 @@ class DisruptionAgent(Agent):
                     return
             
                 action = ACTIONS.OFF if self.hour_counter in self.lowest_hours else ACTIONS.ON
+                console.addstr(f"Lights: {action.value}\n")
                 for traffic in self.used_traffics:
                     await self.send_message(traffic, PERFORMATIVES.INFORM, action)
                 return
